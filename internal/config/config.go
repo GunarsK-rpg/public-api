@@ -1,22 +1,28 @@
 package config
 
-// Config holds all configuration for the service
+import (
+	common "github.com/GunarsK-portfolio/portfolio-common/config"
+)
+
+// Config holds all configuration for the service.
 type Config struct {
-	Service  ServiceConfig
-	Database DatabaseConfig
-	JWT      *JWTConfig // Optional - nil if JWT_SECRET not set
+	Service  common.ServiceConfig
+	Database common.DatabaseConfig
+	JWT      JWTConfig
 }
 
-// Load loads all configuration from environment variables
+// JWTConfig holds JWT authentication configuration.
+type JWTConfig struct {
+	Secret string
+}
+
+// Load loads all configuration from environment variables.
 func Load() *Config {
 	return &Config{
-		Service:  NewServiceConfig(),
-		Database: NewDatabaseConfig(),
-		JWT:      NewJWTConfig(),
+		Service:  common.NewServiceConfig(8090),
+		Database: common.NewDatabaseConfig(),
+		JWT: JWTConfig{
+			Secret: common.GetEnvRequired("JWT_SECRET"),
+		},
 	}
-}
-
-// HasJWT returns true if JWT authentication is configured
-func (c *Config) HasJWT() bool {
-	return c.JWT != nil && c.JWT.HasJWT()
 }

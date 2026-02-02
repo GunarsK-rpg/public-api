@@ -1,42 +1,65 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
-	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+
+	commonHandlers "github.com/GunarsK-portfolio/portfolio-common/handlers"
 )
 
-// ErrorResponse represents an error response
-type ErrorResponse struct {
-	Error string `json:"error"`
-}
-
-// RespondError sends an error response without logging (for expected errors like validation)
-func RespondError(c *gin.Context, statusCode int, message string) {
-	c.JSON(statusCode, ErrorResponse{Error: message})
-}
-
-// LogAndRespondError logs the error and sends an error response
-func LogAndRespondError(c *gin.Context, statusCode int, err error, userMessage string) {
-	slog.Error("Request error",
-		"method", c.Request.Method,
-		"path", c.Request.URL.Path,
-		"status", statusCode,
-		"error", err.Error(),
-	)
-	c.JSON(statusCode, ErrorResponse{Error: userMessage})
-}
-
-// HandleRepositoryError handles repository errors with appropriate responses
-// - Returns 404 for gorm.ErrRecordNotFound
-// - Returns 500 and logs for other errors
-func HandleRepositoryError(c *gin.Context, err error, notFoundMsg, internalMsg string) {
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		RespondError(c, http.StatusNotFound, notFoundMsg)
+// HandlePgxError maps pgx/PostgreSQL errors to appropriate HTTP responses.
+func HandlePgxError(c *gin.Context, err error, notFoundMsg string) {
+	if errors.Is(err, pgx.ErrNoRows) {
+		commonHandlers.RespondError(c, http.StatusNotFound, notFoundMsg)
 		return
 	}
-	LogAndRespondError(c, http.StatusInternalServerError, err, internalMsg)
+
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		switch pgErr.Code {
+		case "23505": // unique_violation
+			commonHandlers.RespondError(c, http.StatusConflict, pgErr.Message)
+			return
+		case "23503": // foreign_key_violation
+			commonHandlers.RespondError(c, http.StatusBadRequest, pgErr.Message)
+			return
+		case "23514": // check_violation
+			commonHandlers.RespondError(c, http.StatusBadRequest, pgErr.Message)
+			return
+		case "P0002": // no_data_found
+			commonHandlers.RespondError(c, http.StatusNotFound, pgErr.Message)
+			return
+		case "P0001": // raise_exception
+			msg := pgErr.Message
+			if strings.Contains(strings.ToLower(msg), "not found") ||
+				strings.Contains(strings.ToLower(msg), "not owned") {
+				commonHandlers.RespondError(c, http.StatusNotFound, msg)
+				return
+			}
+			if strings.Contains(strings.ToLower(msg), "access denied") {
+				commonHandlers.RespondError(c, http.StatusForbidden, msg)
+				return
+			}
+			commonHandlers.RespondError(c, http.StatusBadRequest, msg)
+			return
+		}
+	}
+
+	commonHandlers.LogAndRespondError(c, http.StatusInternalServerError, err, "Internal server error")
+}
+
+// HandleNullResult checks if a JSONB result is NULL (not found) and responds 404.
+// Returns true if the result was null (response already sent).
+func HandleNullResult(c *gin.Context, result json.RawMessage, notFoundMsg string) bool {
+	if result == nil || string(result) == "null" {
+		commonHandlers.RespondError(c, http.StatusNotFound, notFoundMsg)
+		return true
+	}
+	return false
 }
