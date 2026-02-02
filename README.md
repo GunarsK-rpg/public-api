@@ -56,7 +56,7 @@ A Go REST API template using Gin framework with PostgreSQL.
 ### Configuration
 
 | Variable | Description | Default |
-|----------|-------------|---------|
+| -------- | ----------- | ------- |
 | `SERVICE_NAME` | Service identifier | `your-service` |
 | `PORT` | HTTP port | `8080` |
 | `ENVIRONMENT` | Environment (development/staging/production) | `development` |
@@ -67,7 +67,7 @@ A Go REST API template using Gin framework with PostgreSQL.
 | `DB_NAME` | Database name | - |
 | `DB_SSL_MODE` | SSL mode | `disable` |
 | `JWT_SECRET` | JWT signing secret (optional) | - |
-| `ALLOWED_ORIGINS` | CORS allowed origins (comma-separated) | `localhost:3000` |
+| `ALLOWED_ORIGINS` | CORS allowed origins (comma-sep) | `localhost:3000` |
 | `SWAGGER_HOST` | Swagger host for docs | - |
 
 ## Project Structure
@@ -111,7 +111,7 @@ A Go REST API template using Gin framework with PostgreSQL.
 ## API Endpoints
 
 | Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
+| ------ | -------- | ----------- | ---- |
 | GET | `/health` | Health check | No |
 | GET | `/metrics` | Prometheus metrics | No |
 | GET | `/api/v1/items` | List all items | No |
