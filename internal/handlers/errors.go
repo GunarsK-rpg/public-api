@@ -24,16 +24,16 @@ func HandlePgxError(c *gin.Context, err error, notFoundMsg string) {
 	if errors.As(err, &pgErr) {
 		switch pgErr.Code {
 		case "23505": // unique_violation
-			commonHandlers.RespondError(c, http.StatusConflict, pgErr.Message)
+			commonHandlers.RespondError(c, http.StatusConflict, "Resource already exists")
 			return
 		case "23503": // foreign_key_violation
-			commonHandlers.RespondError(c, http.StatusBadRequest, pgErr.Message)
+			commonHandlers.RespondError(c, http.StatusBadRequest, "Referenced resource not found")
 			return
 		case "23514": // check_violation
-			commonHandlers.RespondError(c, http.StatusBadRequest, pgErr.Message)
+			commonHandlers.RespondError(c, http.StatusBadRequest, "Validation constraint failed")
 			return
 		case "P0002": // no_data_found
-			commonHandlers.RespondError(c, http.StatusNotFound, pgErr.Message)
+			commonHandlers.RespondError(c, http.StatusNotFound, notFoundMsg)
 			return
 		case "P0001": // raise_exception
 			msg := pgErr.Message

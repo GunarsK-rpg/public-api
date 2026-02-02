@@ -15,6 +15,9 @@ type pgxChecker struct {
 
 // NewPgxChecker returns a health.Checker that pings the pgx pool.
 func NewPgxChecker(pool *pgxpool.Pool) health.Checker {
+	if pool == nil {
+		panic("NewPgxChecker: pool cannot be nil")
+	}
 	return &pgxChecker{pool: pool}
 }
 

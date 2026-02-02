@@ -19,4 +19,4 @@ reviews:
       enabled: true
 chat:
   auto_reply: true
-tone_instructions: "Focus on Go best practices, Gin framework patterns, GORM usage, error handling, security (OWASP Top 10), and performance. Flag security issues with HIGH priority."
+tone_instructions: "Focus on Go best practices, Gin framework patterns, pgx usage, error handling, security (OWASP Top 10), and performance. Flag security issues with HIGH priority."

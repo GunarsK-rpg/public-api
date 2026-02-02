@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -17,10 +18,14 @@ func NewPool(ctx context.Context, dbCfg config.DatabaseConfig) (*pgxpool.Pool, e
 		sslMode = "disable"
 	}
 
-	connURL := fmt.Sprintf(
-		"postgresql://%s:%s@%s:%d/%s?sslmode=%s",
-		dbCfg.User, dbCfg.Password, dbCfg.Host, dbCfg.Port, dbCfg.Name, sslMode,
-	)
+	u := &url.URL{
+		Scheme:   "postgresql",
+		User:     url.UserPassword(dbCfg.User, dbCfg.Password),
+		Host:     fmt.Sprintf("%s:%d", dbCfg.Host, dbCfg.Port),
+		Path:     dbCfg.Name,
+		RawQuery: fmt.Sprintf("sslmode=%s", url.QueryEscape(sslMode)),
+	}
+	connURL := u.String()
 
 	poolCfg, err := pgxpool.ParseConfig(connURL)
 	if err != nil {

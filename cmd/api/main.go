@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"os"
 	"strconv"
 	"time"
@@ -42,7 +41,7 @@ func main() {
 	pool, err := database.NewPool(ctx, cfg.Database)
 	if err != nil {
 		appLogger.Error("Failed to connect to database", "error", err)
-		log.Fatal(err)
+		os.Exit(1)
 	}
 	defer pool.Close()
 
@@ -75,6 +74,6 @@ func main() {
 	serverCfg := server.DefaultConfig(strconv.Itoa(cfg.Service.Port))
 	if err := server.Run(router, serverCfg, appLogger); err != nil {
 		appLogger.Error("Server error", "error", err)
-		log.Fatal(err)
+		os.Exit(1)
 	}
 }
