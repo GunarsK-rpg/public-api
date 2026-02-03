@@ -21,6 +21,7 @@ type AuthContext struct {
 type Repository interface {
 	Ping(ctx context.Context) error
 	ClassifierRepository
+	HeroRepository
 }
 
 type repository struct {
@@ -37,8 +38,6 @@ func (r *repository) Ping(ctx context.Context) error {
 }
 
 // withAuditTx begins a transaction, sets audit context, executes fn, and commits.
-//
-//nolint:unused
 func (r *repository) withAuditTx(ctx context.Context, auth AuthContext, fn func(tx pgx.Tx) error) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
@@ -77,8 +76,6 @@ func (r *repository) callFunc(ctx context.Context, auth AuthContext, query strin
 
 // execFunc executes a query inside a transaction with audit context set.
 // Returns the boolean result from delete functions.
-//
-//nolint:unused
 func (r *repository) execFunc(ctx context.Context, auth AuthContext, query string, args ...any) (bool, error) {
 	var result bool
 	err := r.withAuditTx(ctx, auth, func(tx pgx.Tx) error {

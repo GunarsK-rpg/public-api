@@ -35,6 +35,7 @@ func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, he
 	v1.Use(authMiddleware.ValidateToken())
 	v1.Use(authMiddleware.AddTTLHeader())
 	v1.Use(middleware.UserSync(pool))
+	v1.Use(middleware.BodyLimit(cfg.MaxBodySize))
 
 	// Classifiers routes (read-only)
 	classifiers := v1.Group("/classifiers")
@@ -80,12 +81,42 @@ func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, he
 	// Heroes routes
 	heroes := v1.Group("/heroes")
 	heroes.Use(commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelRead))
+	{
+		// Core hero CRUD
+		heroes.GET("", handler.GetHeroes)
+		heroes.GET("/:id", handler.GetHero)
+		heroes.GET("/:id/sheet", handler.GetHeroSheet)
+		heroes.POST("", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelEdit), handler.CreateHero)
+		heroes.PUT("/:id", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelEdit), handler.UpdateHero)
+		heroes.DELETE("/:id", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelDelete), handler.DeleteHero)
+
+		// Sub-resource routes
+		registerHeroSubResource(heroes, "attributes", handler.GetHeroAttributes, handler.UpsertHeroAttribute, handler.DeleteHeroAttribute)
+		registerHeroSubResource(heroes, "defenses", handler.GetHeroDefenses, handler.UpsertHeroDefense, handler.DeleteHeroDefense)
+		registerHeroSubResource(heroes, "derived-stats", handler.GetHeroDerivedStats, handler.UpsertHeroDerivedStat, handler.DeleteHeroDerivedStat)
+		registerHeroSubResource(heroes, "skills", handler.GetHeroSkills, handler.UpsertHeroSkill, handler.DeleteHeroSkill)
+		registerHeroSubResource(heroes, "expertises", handler.GetHeroExpertises, handler.UpsertHeroExpertise, handler.DeleteHeroExpertise)
+		registerHeroSubResource(heroes, "talents", handler.GetHeroTalents, handler.UpsertHeroTalent, handler.DeleteHeroTalent)
+		registerHeroSubResource(heroes, "equipment", handler.GetHeroEquipment, handler.UpsertHeroEquipment, handler.DeleteHeroEquipment)
+		registerHeroSubResource(heroes, "conditions", handler.GetHeroConditions, handler.UpsertHeroCondition, handler.DeleteHeroCondition)
+		registerHeroSubResource(heroes, "injuries", handler.GetHeroInjuries, handler.UpsertHeroInjury, handler.DeleteHeroInjury)
+		registerHeroSubResource(heroes, "goals", handler.GetHeroGoals, handler.UpsertHeroGoal, handler.DeleteHeroGoal)
+		registerHeroSubResource(heroes, "connections", handler.GetHeroConnections, handler.UpsertHeroConnection, handler.DeleteHeroConnection)
+		registerHeroSubResource(heroes, "companions", handler.GetHeroCompanions, handler.UpsertHeroCompanion, handler.DeleteHeroCompanion)
+		registerHeroSubResource(heroes, "cultures", handler.GetHeroCultures, handler.UpsertHeroCulture, handler.DeleteHeroCulture)
+	}
 
 	// Campaigns routes
 	campaigns := v1.Group("/campaigns")
 	campaigns.Use(commonMiddleware.RequirePermission(constants.ResourceCampaigns, commonMiddleware.LevelRead))
 
 	// Suppress unused variable warnings until endpoints are added
-	_ = heroes
 	_ = campaigns
+}
+
+// registerHeroSubResource registers GET/POST/DELETE routes for a hero sub-resource.
+func registerHeroSubResource(group *gin.RouterGroup, name string, getHandler, upsertHandler, deleteHandler gin.HandlerFunc) {
+	group.GET("/:id/"+name, getHandler)
+	group.POST("/:id/"+name, commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelEdit), upsertHandler)
+	group.DELETE("/:id/"+name+"/:subId", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelDelete), deleteHandler)
 }
