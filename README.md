@@ -1,261 +1,159 @@
-# Template API
+# Public API
 
-A Go REST API template using Gin framework with PostgreSQL.
+![CI](https://github.com/GunarsK-rpg/public-api/workflows/CI/badge.svg)
+[![Go Report Card](https://goreportcard.com/badge/github.com/GunarsK-rpg/public-api)](https://goreportcard.com/report/github.com/GunarsK-rpg/public-api)
+[![CodeRabbit](https://img.shields.io/coderabbit/prs/github/GunarsK-rpg/public-api?label=CodeRabbit&color=2ea44f)](https://coderabbit.ai)
+
+RESTful API for Cosmere RPG with PostgreSQL stored functions (JSONB passthrough).
 
 ## Features
 
-- RESTful API with Gin framework
-- PostgreSQL with GORM ORM
-- Structured logging with slog
-- Prometheus metrics
-- Swagger/OpenAPI documentation
-- Docker support with multi-stage builds
-- CI/CD with GitHub Actions
-- Security scanning (govulncheck, gosec, Trivy)
-- Unit tests with table-driven patterns
+- Classifier endpoints (30+ read-only reference data)
+- Hero CRUD with 13 sub-resources (attributes, talents, equipment, etc.)
+- Campaign CRUD
+- JWT authentication via portfolio auth-service
+- Permission-based access control (read/edit/delete levels)
+- Transaction-scoped audit context
+- User sync from JWT to RPG database
 
-## Getting Started
+## Tech Stack
 
-### Prerequisites
+- **Language**: Go 1.23
+- **Framework**: Gin
+- **Database**: PostgreSQL 17+ (pgx, stored functions)
+- **Common**: portfolio-common library (auth middleware, logging, metrics)
+- **Auth**: JWT validation via auth-service
 
-- Go 1.25+
-- PostgreSQL 15+
-- [Task](https://taskfile.dev/) (optional, for task runner)
+## Prerequisites
 
-### Installation
-
-1. Clone the repository:
-
-   ```bash
-   git clone https://github.com/GunarsK-templates/template-api.git
-   cd template-api
-   ```
-
-2. Copy environment file:
-
-   ```bash
-   cp .env.example .env
-   ```
-
-3. Edit `.env` with your configuration
-
-4. Install dependencies:
-
-   ```bash
-   go mod download
-   ```
-
-5. Run the service:
-
-   ```bash
-   go run cmd/api/main.go
-   # or with Task
-   task run
-   ```
-
-### Configuration
-
-| Variable | Description | Default |
-| -------- | ----------- | ------- |
-| `SERVICE_NAME` | Service identifier | `your-service` |
-| `PORT` | HTTP port | `8080` |
-| `ENVIRONMENT` | Environment (development/staging/production) | `development` |
-| `DB_HOST` | PostgreSQL host | - |
-| `DB_PORT` | PostgreSQL port | `5432` |
-| `DB_USER` | Database user | - |
-| `DB_PASSWORD` | Database password | - |
-| `DB_NAME` | Database name | - |
-| `DB_SSL_MODE` | SSL mode | `disable` |
-| `JWT_SECRET` | JWT signing secret (optional) | - |
-| `ALLOWED_ORIGINS` | CORS allowed origins (comma-sep) | `localhost:3000` |
-| `SWAGGER_HOST` | Swagger host for docs | - |
+- Go 1.23+
+- Node.js 22+ and npm 11+
+- PostgreSQL with Cosmere RPG database schema
+- auth-service running
 
 ## Project Structure
 
 ```text
-.
+public-api/
 ├── cmd/
-│   └── api/
-│       └── main.go          # Application entry point
+│   └── api/              # Application entrypoint
 ├── internal/
-│   ├── config/
-│   │   ├── config.go        # Main config (combines sub-configs)
-│   │   ├── service.go       # Service configuration
-│   │   ├── database.go      # Database configuration
-│   │   ├── jwt.go           # JWT configuration (optional)
-│   │   └── *_test.go        # Unit tests
-│   ├── handlers/
-│   │   ├── handler.go       # Handler struct and dependencies
-│   │   ├── health.go        # Health check endpoint
-│   │   ├── errors.go        # Error handling utilities
-│   │   └── example.go       # Example CRUD handlers
-│   ├── models/
-│   │   └── item.go          # Data models
-│   ├── repository/
-│   │   ├── repository.go    # Repository interface and DB setup
-│   │   ├── item.go          # Item repository implementation
-│   │   └── errors.go        # Repository errors
-│   ├── routes/
-│   │   └── routes.go        # Route definitions
-│   └── utils/
-│       ├── env.go           # Environment variable helpers
-│       └── env_test.go      # Unit tests
-├── docs/                    # Swagger documentation (generated)
-├── Dockerfile
-├── Taskfile.yml
-├── TESTING.md               # Testing guide
-├── go.mod
-└── README.md
+│   ├── config/           # Configuration
+│   ├── constants/        # Resource constants
+│   ├── database/         # pgx pool and health checker
+│   ├── handlers/         # HTTP handlers
+│   ├── middleware/       # User sync, body limit
+│   ├── models/           # Request models
+│   ├── repository/       # Data access layer (DB function calls)
+│   └── routes/           # Route definitions
 ```
 
-## API Endpoints
+## Quick Start
 
-| Method | Endpoint | Description | Auth |
-| ------ | -------- | ----------- | ---- |
-| GET | `/health` | Health check | No |
-| GET | `/metrics` | Prometheus metrics | No |
-| GET | `/api/v1/items` | List all items | No |
-| GET | `/api/v1/items/:id` | Get item by ID | No |
-| POST | `/api/v1/items` | Create item | Optional |
-| PUT | `/api/v1/items/:id` | Update item | Optional |
-| DELETE | `/api/v1/items/:id` | Delete item | Optional |
-
-## Development
-
-### Available Tasks
+### Using Docker Compose
 
 ```bash
-# Run locally
-task run
+docker-compose up -d
+```
 
-# Build binary
-task build
+### Local Development
 
-# Run tests
-task test
-task test:coverage
+1. Copy environment file:
+
+```bash
+cp .env.example .env
+```
+
+1. Update `.env` with your configuration:
+
+```env
+PORT=8182
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=cosmere_app
+DB_PASSWORD=cosmere_app_dev_pass
+DB_NAME=cosmere_rpg
+JWT_SECRET=your-secret-matching-auth-service
+```
+
+1. Run the service:
+
+```bash
+go run cmd/api/main.go
+```
+
+## Available Commands
+
+Using Task:
+
+```bash
+# Development
+task dev:install-tools   # Install dev tools (golangci-lint, govulncheck, etc.)
+
+# Build and run
+task build               # Build binary
+task test                # Run tests
+task test:coverage       # Run tests with coverage report
+task clean               # Clean build artifacts
 
 # Code quality
-task lint
-task format
-task vet
-task tidy
-task lint:markdown
+task format              # Format code with gofmt
+task tidy                # Tidy and verify go.mod
+task lint                # Run golangci-lint
+task vet                 # Run go vet
 
 # Security
-task security:scan
-task security:vuln
-
-# Generate Swagger docs
-task dev:swagger
+task security:scan       # Run gosec security scanner
+task security:vuln       # Check for vulnerabilities with govulncheck
 
 # Docker
-task docker:build
-task docker:run
-task docker:stop
-task docker:logs
+task docker:build        # Build Docker image
+task docker:run          # Run service in Docker container
+task docker:stop         # Stop running Docker container
+task docker:logs         # View Docker container logs
 
-# Run all CI checks
-task ci:all
-
-# Install dev tools
-task dev:install-tools
-
-# Clean build artifacts
-task clean
+# CI/CD
+task ci:all              # Run all CI checks
 ```
 
-### Generating Swagger Documentation
+Using Go directly:
 
 ```bash
-task dev:swagger
+go run cmd/api/main.go                      # Run
+go build -o bin/public-api cmd/api/main.go  # Build
+go test ./...                               # Test
 ```
 
-Then access Swagger UI at `http://localhost:8080/swagger/index.html`
-(requires `SWAGGER_HOST` to be set).
+## Environment Variables
 
-## Testing
+| Variable | Description | Default |
+| -------- | ----------- | ------- |
+| `PORT` | Server port | `8182` |
+| `DB_HOST` | PostgreSQL host | `localhost` |
+| `DB_PORT` | PostgreSQL port | `5432` |
+| `DB_USER` | Database user | `postgres` |
+| `DB_PASSWORD` | Database password | - |
+| `DB_NAME` | Database name | `cosmere_rpg` |
+| `DB_SSL_MODE` | PostgreSQL SSL mode | `disable` |
+| `JWT_SECRET` | JWT secret (must match auth-service) | - |
+| `ALLOWED_ORIGINS` | CORS allowed origins | - |
+| `LOG_LEVEL` | Log level (debug/info/warn/error) | `info` |
+| `LOG_FORMAT` | Log format (text/json) | `text` |
+| `MAX_BODY_SIZE` | Max request body size in bytes | `1048576` |
 
-See [TESTING.md](TESTING.md) for testing guide.
+## Authentication
 
-```bash
-# Run all tests
-task test
+This API validates JWT tokens issued by auth-service using the
+portfolio-common auth middleware. Tokens must include:
 
-# Run with coverage
-go test -cover ./...
+- `user_id`: User's numeric ID
+- `username`: User's display name
+- `scopes`: Permission map, e.g., `{"heroes": "edit", "campaigns": "read"}`
 
-# Run specific tests
-go test -v -run TestNewDatabaseConfig ./internal/config/
-```
+Permission levels are hierarchical: `none < read < edit < delete`
 
-## Docker
-
-### Build
-
-```bash
-docker build -t template-api:latest .
-```
-
-### Run
-
-```bash
-docker run --rm -p 8080:8080 --env-file .env template-api:latest
-```
-
-## Customization
-
-### Adding a New Resource
-
-1. Create model in `internal/models/`:
-
-   ```go
-   type MyResource struct {
-       ID        int64     `json:"id" gorm:"primaryKey"`
-       Name      string    `json:"name" gorm:"size:200;not null"`
-       CreatedAt time.Time `json:"created_at"`
-       UpdatedAt time.Time `json:"updated_at"`
-   }
-   ```
-
-2. Add repository methods in `internal/repository/`:
-
-   ```go
-   // In repository.go interface
-   GetAllMyResources(ctx context.Context) ([]models.MyResource, error)
-   // ... other methods
-
-   // Create myresource.go with implementations
-   ```
-
-3. Add handlers in `internal/handlers/`:
-
-   ```go
-   func (h *Handler) GetMyResources(c *gin.Context) { ... }
-   ```
-
-4. Add routes in `internal/routes/routes.go`:
-
-   ```go
-   myresources := v1.Group("/myresources")
-   {
-       myresources.GET("", handler.GetMyResources)
-       // ...
-   }
-   ```
-
-5. Regenerate Swagger docs:
-
-   ```bash
-   task swagger
-   ```
-
-### Adding Authentication
-
-1. Set `JWT_SECRET` in `.env`
-2. Uncomment auth middleware in `internal/routes/routes.go`
-3. Implement JWT validation middleware
+All endpoints except `/health` and `/metrics` require authentication.
 
 ## License
 
-MIT
+[MIT](LICENSE)
