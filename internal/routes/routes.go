@@ -42,9 +42,11 @@ func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, he
 
 	// Heroes routes
 	heroes := v1.Group("/heroes")
+	heroes.Use(commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelRead))
 
 	// Campaigns routes
 	campaigns := v1.Group("/campaigns")
+	campaigns.Use(commonMiddleware.RequirePermission(constants.ResourceCampaigns, commonMiddleware.LevelRead))
 
 	// Suppress unused variable warnings until endpoints are added
 	_ = classifiers

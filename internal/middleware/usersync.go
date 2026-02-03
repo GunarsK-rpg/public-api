@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"context"
 	"log/slog"
 	"net/http"
 
@@ -24,7 +23,7 @@ func UserSync(pool *pgxpool.Pool) gin.HandlerFunc {
 
 		// Sync user to RPG database
 		_, err = pool.Exec(
-			context.Background(),
+			c.Request.Context(),
 			"SELECT auth.sync_user($1, $2)",
 			auth.UserID,
 			auth.Username,
