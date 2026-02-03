@@ -31,7 +31,6 @@ func UserSync(pool *pgxpool.Pool) gin.HandlerFunc {
 		if err != nil {
 			slog.Error("failed to sync user",
 				"user_id", auth.UserID,
-				"username", auth.Username,
 				"error", err,
 			)
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
