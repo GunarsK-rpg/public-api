@@ -20,6 +20,7 @@ type AuthContext struct {
 // Repository defines the interface for data access.
 type Repository interface {
 	Ping(ctx context.Context) error
+	ClassifierRepository
 }
 
 type repository struct {
@@ -64,11 +65,11 @@ func (r *repository) withAuditTx(ctx context.Context, auth AuthContext, fn func(
 	return nil
 }
 
-// callFunctionInTx executes a query inside a transaction with audit context set.
+// callFunc executes a query inside a transaction with audit context set.
 // Returns the JSONB result from the database function.
 //
 //nolint:unused
-func (r *repository) callFunctionInTx(ctx context.Context, auth AuthContext, query string, args ...any) (json.RawMessage, error) {
+func (r *repository) callFunc(ctx context.Context, auth AuthContext, query string, args ...any) (json.RawMessage, error) {
 	var result json.RawMessage
 	err := r.withAuditTx(ctx, auth, func(tx pgx.Tx) error {
 		return tx.QueryRow(ctx, query, args...).Scan(&result)
@@ -76,11 +77,11 @@ func (r *repository) callFunctionInTx(ctx context.Context, auth AuthContext, que
 	return result, err
 }
 
-// execFunctionInTx executes a query inside a transaction with audit context set.
+// execFunc executes a query inside a transaction with audit context set.
 // Returns the boolean result from delete functions.
 //
 //nolint:unused
-func (r *repository) execFunctionInTx(ctx context.Context, auth AuthContext, query string, args ...any) (bool, error) {
+func (r *repository) execFunc(ctx context.Context, auth AuthContext, query string, args ...any) (bool, error) {
 	var result bool
 	err := r.withAuditTx(ctx, auth, func(tx pgx.Tx) error {
 		return tx.QueryRow(ctx, query, args...).Scan(&result)

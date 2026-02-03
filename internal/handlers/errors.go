@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -13,9 +12,9 @@ import (
 )
 
 // HandlePgxError maps pgx/PostgreSQL errors to appropriate HTTP responses.
-func HandlePgxError(c *gin.Context, err error, notFoundMsg string) {
+func HandlePgxError(c *gin.Context, err error) {
 	if errors.Is(err, pgx.ErrNoRows) {
-		commonHandlers.RespondError(c, http.StatusNotFound, notFoundMsg)
+		commonHandlers.RespondError(c, http.StatusNotFound, "not found")
 		return
 	}
 
@@ -44,14 +43,4 @@ func HandlePgxError(c *gin.Context, err error, notFoundMsg string) {
 	}
 
 	commonHandlers.LogAndRespondError(c, http.StatusInternalServerError, err, "Internal server error")
-}
-
-// HandleNullResult checks if a JSONB result is NULL (not found) and responds 404.
-// Returns true if the result was null (response already sent).
-func HandleNullResult(c *gin.Context, result json.RawMessage, notFoundMsg string) bool {
-	if result == nil || string(result) == "null" {
-		commonHandlers.RespondError(c, http.StatusNotFound, notFoundMsg)
-		return true
-	}
-	return false
 }

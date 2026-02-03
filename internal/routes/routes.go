@@ -39,6 +39,43 @@ func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, he
 	// Classifiers routes (read-only)
 	classifiers := v1.Group("/classifiers")
 	classifiers.Use(commonMiddleware.RequirePermission(constants.ResourceClassifiers, commonMiddleware.LevelRead))
+	{
+		// Simple getters (no parameters)
+		classifiers.GET("/attribute-types", handler.GetAttributeTypes)
+		classifiers.GET("/attributes", handler.GetAttributes)
+		classifiers.GET("/derived-stats", handler.GetDerivedStats)
+		classifiers.GET("/derived-stat-values", handler.GetDerivedStatValues)
+		classifiers.GET("/skills", handler.GetSkills)
+		classifiers.GET("/expertise-types", handler.GetExpertiseTypes)
+		classifiers.GET("/paths", handler.GetPaths)
+		classifiers.GET("/surges", handler.GetSurges)
+		classifiers.GET("/radiant-orders", handler.GetRadiantOrders)
+		classifiers.GET("/ancestries", handler.GetAncestries)
+		classifiers.GET("/activation-types", handler.GetActivationTypes)
+		classifiers.GET("/action-types", handler.GetActionTypes)
+		classifiers.GET("/damage-types", handler.GetDamageTypes)
+		classifiers.GET("/units", handler.GetUnits)
+		classifiers.GET("/equipment-types", handler.GetEquipmentTypes)
+		classifiers.GET("/equipment-attributes", handler.GetEquipmentAttributes)
+		classifiers.GET("/conditions", handler.GetConditions)
+		classifiers.GET("/injuries", handler.GetInjuries)
+		classifiers.GET("/goal-status", handler.GetGoalStatus)
+		classifiers.GET("/connection-types", handler.GetConnectionTypes)
+		classifiers.GET("/companion-types", handler.GetCompanionTypes)
+		classifiers.GET("/cultures", handler.GetCultures)
+		classifiers.GET("/tiers", handler.GetTiers)
+		classifiers.GET("/levels", handler.GetLevels)
+		classifiers.GET("/starting-kits", handler.GetStartingKits)
+
+		// Getters with optional filters
+		classifiers.GET("/expertises", handler.GetExpertises)    // ?type_code=
+		classifiers.GET("/specialties", handler.GetSpecialties)  // ?path_code=
+		classifiers.GET("/singer-forms", handler.GetSingerForms) // ?base_forms_only=
+		classifiers.GET("/talents", handler.GetTalents)          // ?path_code=&specialty_code=&ancestry_code=&radiant_order_code=&surge_code=&is_key=
+		classifiers.GET("/actions", handler.GetActions)          // ?action_type_code=&activation_type_code=&damage_type_code=
+		classifiers.GET("/action-links", handler.GetActionLinks) // ?object_id= OR ?action_code= (one required)
+		classifiers.GET("/equipments", handler.GetEquipments)    // ?type_code=&damage_type_code=
+	}
 
 	// Heroes routes
 	heroes := v1.Group("/heroes")
@@ -49,7 +86,6 @@ func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, he
 	campaigns.Use(commonMiddleware.RequirePermission(constants.ResourceCampaigns, commonMiddleware.LevelRead))
 
 	// Suppress unused variable warnings until endpoints are added
-	_ = classifiers
 	_ = heroes
 	_ = campaigns
 }
