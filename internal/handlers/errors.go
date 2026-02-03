@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -13,9 +12,9 @@ import (
 )
 
 // HandlePgxError maps pgx/PostgreSQL errors to appropriate HTTP responses.
-func HandlePgxError(c *gin.Context, err error, notFoundMsg string) {
+func HandlePgxError(c *gin.Context, err error) {
 	if errors.Is(err, pgx.ErrNoRows) {
-		commonHandlers.RespondError(c, http.StatusNotFound, notFoundMsg)
+		commonHandlers.RespondError(c, http.StatusNotFound, "not found")
 		return
 	}
 
@@ -23,19 +22,19 @@ func HandlePgxError(c *gin.Context, err error, notFoundMsg string) {
 	if errors.As(err, &pgErr) {
 		switch pgErr.Code {
 		case "23505": // unique_violation
-			commonHandlers.RespondError(c, http.StatusConflict, "Resource already exists")
+			commonHandlers.RespondError(c, http.StatusConflict, "resource already exists")
 			return
 		case "23503": // foreign_key_violation
-			commonHandlers.RespondError(c, http.StatusBadRequest, "Referenced resource not found")
+			commonHandlers.RespondError(c, http.StatusBadRequest, "referenced resource not found")
 			return
 		case "23514": // check_violation
-			commonHandlers.RespondError(c, http.StatusBadRequest, "Validation constraint failed")
+			commonHandlers.RespondError(c, http.StatusBadRequest, "validation constraint failed")
 			return
 		case "P0002": // no_data_found
-			commonHandlers.RespondError(c, http.StatusNotFound, pgErr.Message)
+			commonHandlers.RespondError(c, http.StatusNotFound, "not found")
 			return
 		case "42501": // insufficient_privilege
-			commonHandlers.RespondError(c, http.StatusForbidden, pgErr.Message)
+			commonHandlers.RespondError(c, http.StatusForbidden, "access denied")
 			return
 		case "P0001": // raise_exception (validation errors)
 			commonHandlers.RespondError(c, http.StatusBadRequest, pgErr.Message)
@@ -43,15 +42,5 @@ func HandlePgxError(c *gin.Context, err error, notFoundMsg string) {
 		}
 	}
 
-	commonHandlers.LogAndRespondError(c, http.StatusInternalServerError, err, "Internal server error")
-}
-
-// HandleNullResult checks if a JSONB result is NULL (not found) and responds 404.
-// Returns true if the result was null (response already sent).
-func HandleNullResult(c *gin.Context, result json.RawMessage, notFoundMsg string) bool {
-	if result == nil || string(result) == "null" {
-		commonHandlers.RespondError(c, http.StatusNotFound, notFoundMsg)
-		return true
-	}
-	return false
+	commonHandlers.LogAndRespondError(c, http.StatusInternalServerError, err, "internal server error")
 }
