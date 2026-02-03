@@ -22,19 +22,19 @@ func HandlePgxError(c *gin.Context, err error) {
 	if errors.As(err, &pgErr) {
 		switch pgErr.Code {
 		case "23505": // unique_violation
-			commonHandlers.RespondError(c, http.StatusConflict, "Resource already exists")
+			commonHandlers.RespondError(c, http.StatusConflict, "resource already exists")
 			return
 		case "23503": // foreign_key_violation
-			commonHandlers.RespondError(c, http.StatusBadRequest, "Referenced resource not found")
+			commonHandlers.RespondError(c, http.StatusBadRequest, "referenced resource not found")
 			return
 		case "23514": // check_violation
-			commonHandlers.RespondError(c, http.StatusBadRequest, "Validation constraint failed")
+			commonHandlers.RespondError(c, http.StatusBadRequest, "validation constraint failed")
 			return
 		case "P0002": // no_data_found
-			commonHandlers.RespondError(c, http.StatusNotFound, pgErr.Message)
+			commonHandlers.RespondError(c, http.StatusNotFound, "not found")
 			return
 		case "42501": // insufficient_privilege
-			commonHandlers.RespondError(c, http.StatusForbidden, pgErr.Message)
+			commonHandlers.RespondError(c, http.StatusForbidden, "access denied")
 			return
 		case "P0001": // raise_exception (validation errors)
 			commonHandlers.RespondError(c, http.StatusBadRequest, pgErr.Message)
@@ -42,5 +42,5 @@ func HandlePgxError(c *gin.Context, err error) {
 		}
 	}
 
-	commonHandlers.LogAndRespondError(c, http.StatusInternalServerError, err, "Internal server error")
+	commonHandlers.LogAndRespondError(c, http.StatusInternalServerError, err, "internal server error")
 }

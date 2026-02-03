@@ -131,7 +131,7 @@ func (h *Handler) GetActions(c *gin.Context) {
 }
 
 func (h *Handler) GetActionLinks(c *gin.Context) {
-	handleFilteredResponse[requests.GetActionLinksQuery](c, h.repo.GetActionLinks)
+	handleValidatedFilteredResponse[requests.GetActionLinksQuery](c, h.repo.GetActionLinks)
 }
 
 func (h *Handler) GetEquipments(c *gin.Context) {

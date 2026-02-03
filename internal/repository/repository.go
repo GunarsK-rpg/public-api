@@ -67,8 +67,6 @@ func (r *repository) withAuditTx(ctx context.Context, auth AuthContext, fn func(
 
 // callFunc executes a query inside a transaction with audit context set.
 // Returns the JSONB result from the database function.
-//
-//nolint:unused
 func (r *repository) callFunc(ctx context.Context, auth AuthContext, query string, args ...any) (json.RawMessage, error) {
 	var result json.RawMessage
 	err := r.withAuditTx(ctx, auth, func(tx pgx.Tx) error {
