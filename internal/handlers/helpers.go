@@ -200,5 +200,9 @@ func getPathParamInt64(c *gin.Context, param string) (int64, error) {
 	if str == "" {
 		return 0, fmt.Errorf("missing path parameter: %s", param)
 	}
-	return strconv.ParseInt(str, 10, 64)
+	id, err := strconv.ParseInt(str, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid %s: must be an integer", param)
+	}
+	return id, nil
 }

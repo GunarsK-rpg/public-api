@@ -35,6 +35,7 @@ func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, he
 	v1.Use(authMiddleware.ValidateToken())
 	v1.Use(authMiddleware.AddTTLHeader())
 	v1.Use(middleware.UserSync(pool))
+	v1.Use(middleware.BodyLimit(cfg.MaxBodySize))
 
 	// Classifiers routes (read-only)
 	classifiers := v1.Group("/classifiers")

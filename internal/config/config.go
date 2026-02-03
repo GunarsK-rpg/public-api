@@ -2,6 +2,8 @@ package config
 
 import (
 	"fmt"
+	"os"
+	"strconv"
 
 	"github.com/go-playground/validator/v10"
 
@@ -10,17 +12,19 @@ import (
 
 // Config holds all configuration for the service.
 type Config struct {
-	Service   common.ServiceConfig
-	Database  common.DatabaseConfig
-	JWTSecret string `validate:"required,min=32"`
+	Service     common.ServiceConfig
+	Database    common.DatabaseConfig
+	JWTSecret   string `validate:"required,min=32"`
+	MaxBodySize int64  `validate:"min=1024"` // Minimum 1KB
 }
 
 // Load loads all configuration from environment variables.
 func Load() *Config {
 	cfg := &Config{
-		Service:   common.NewServiceConfig(8090),
-		Database:  common.NewDatabaseConfig(),
-		JWTSecret: common.GetEnvRequired("JWT_SECRET"),
+		Service:     common.NewServiceConfig(8090),
+		Database:    common.NewDatabaseConfig(),
+		JWTSecret:   common.GetEnvRequired("JWT_SECRET"),
+		MaxBodySize: getEnvInt64("MAX_BODY_SIZE", 64<<10), // Default 64KB
 	}
 
 	validate := validator.New()
@@ -29,4 +33,14 @@ func Load() *Config {
 	}
 
 	return cfg
+}
+
+// getEnvInt64 returns the int64 value of an environment variable or the default.
+func getEnvInt64(key string, defaultVal int64) int64 {
+	if val := os.Getenv(key); val != "" {
+		if i, err := strconv.ParseInt(val, 10, 64); err == nil {
+			return i
+		}
+	}
+	return defaultVal
 }
