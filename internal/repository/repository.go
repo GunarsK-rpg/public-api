@@ -22,6 +22,7 @@ type Repository interface {
 	Ping(ctx context.Context) error
 	ClassifierRepository
 	HeroRepository
+	CampaignRepository
 }
 
 type repository struct {
