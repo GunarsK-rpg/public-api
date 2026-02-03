@@ -109,9 +109,13 @@ func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, he
 	// Campaigns routes
 	campaigns := v1.Group("/campaigns")
 	campaigns.Use(commonMiddleware.RequirePermission(constants.ResourceCampaigns, commonMiddleware.LevelRead))
-
-	// Suppress unused variable warnings until endpoints are added
-	_ = campaigns
+	{
+		campaigns.GET("", handler.GetCampaigns)
+		campaigns.GET("/:id", handler.GetCampaign)
+		campaigns.POST("", commonMiddleware.RequirePermission(constants.ResourceCampaigns, commonMiddleware.LevelEdit), handler.CreateCampaign)
+		campaigns.PUT("/:id", commonMiddleware.RequirePermission(constants.ResourceCampaigns, commonMiddleware.LevelEdit), handler.UpdateCampaign)
+		campaigns.DELETE("/:id", commonMiddleware.RequirePermission(constants.ResourceCampaigns, commonMiddleware.LevelDelete), handler.DeleteCampaign)
+	}
 }
 
 // registerHeroSubResource registers GET/POST/DELETE routes for a hero sub-resource.

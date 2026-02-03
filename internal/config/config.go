@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"strconv"
 
@@ -38,9 +39,16 @@ func Load() *Config {
 // getEnvInt64 returns the int64 value of an environment variable or the default.
 func getEnvInt64(key string, defaultVal int64) int64 {
 	if val := os.Getenv(key); val != "" {
-		if i, err := strconv.ParseInt(val, 10, 64); err == nil {
-			return i
+		i, err := strconv.ParseInt(val, 10, 64)
+		if err != nil {
+			slog.Warn("invalid environment variable value, using default",
+				"key", key,
+				"value", val,
+				"default", defaultVal,
+			)
+			return defaultVal
 		}
+		return i
 	}
 	return defaultVal
 }
