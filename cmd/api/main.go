@@ -36,7 +36,8 @@ func main() {
 		Namespace:   "rpg",
 	})
 
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
 	pool, err := database.NewPool(ctx, cfg.Database)
 	if err != nil {

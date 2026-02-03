@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
@@ -33,20 +32,13 @@ func HandlePgxError(c *gin.Context, err error, notFoundMsg string) {
 			commonHandlers.RespondError(c, http.StatusBadRequest, "Validation constraint failed")
 			return
 		case "P0002": // no_data_found
-			commonHandlers.RespondError(c, http.StatusNotFound, notFoundMsg)
+			commonHandlers.RespondError(c, http.StatusNotFound, pgErr.Message)
 			return
-		case "P0001": // raise_exception
-			msg := pgErr.Message
-			if strings.Contains(strings.ToLower(msg), "not found") ||
-				strings.Contains(strings.ToLower(msg), "not owned") {
-				commonHandlers.RespondError(c, http.StatusNotFound, msg)
-				return
-			}
-			if strings.Contains(strings.ToLower(msg), "access denied") {
-				commonHandlers.RespondError(c, http.StatusForbidden, msg)
-				return
-			}
-			commonHandlers.RespondError(c, http.StatusBadRequest, msg)
+		case "42501": // insufficient_privilege
+			commonHandlers.RespondError(c, http.StatusForbidden, pgErr.Message)
+			return
+		case "P0001": // raise_exception (validation errors)
+			commonHandlers.RespondError(c, http.StatusBadRequest, pgErr.Message)
 			return
 		}
 	}
