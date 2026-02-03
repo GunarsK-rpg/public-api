@@ -1,0 +1,280 @@
+package handlers
+
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+
+	commonHandlers "github.com/GunarsK-portfolio/portfolio-common/handlers"
+
+	"github.com/GunarsK-rpg/public-api/internal/models/requests"
+)
+
+// GetHeroes returns a list of heroes filtered by campaign.
+func (h *Handler) GetHeroes(c *gin.Context) {
+	auth, err := GetAuthContext(c)
+	if err != nil {
+		commonHandlers.RespondError(c, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	var query requests.GetHeroesQuery
+	if err := c.ShouldBindQuery(&query); err != nil {
+		commonHandlers.RespondError(c, http.StatusBadRequest, "invalid query parameters")
+		return
+	}
+
+	result, err := h.repo.GetHeroes(c.Request.Context(), auth, query.CampaignID, query.Limit, query.Offset)
+	if err != nil {
+		HandlePgxError(c, err)
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", result)
+}
+
+// GetHero returns a single hero by ID.
+func (h *Handler) GetHero(c *gin.Context) {
+	handleGetByID(c, "id", h.repo.GetHero)
+}
+
+// GetHeroSheet returns complete hero sheet by ID.
+func (h *Handler) GetHeroSheet(c *gin.Context) {
+	handleGetByID(c, "id", h.repo.GetHeroSheet)
+}
+
+// CreateHero creates a new hero.
+func (h *Handler) CreateHero(c *gin.Context) {
+	handlePost(c, h.repo.UpsertHero)
+}
+
+// UpdateHero updates an existing hero.
+func (h *Handler) UpdateHero(c *gin.Context) {
+	handlePost(c, h.repo.UpsertHero)
+}
+
+// DeleteHero deletes a hero by ID.
+func (h *Handler) DeleteHero(c *gin.Context) {
+	handleDelete(c, "id", h.repo.DeleteHero)
+}
+
+// Attributes
+
+// GetHeroAttributes returns all attributes for a hero.
+func (h *Handler) GetHeroAttributes(c *gin.Context) {
+	handleGetByID(c, "id", h.repo.GetHeroAttributes)
+}
+
+// UpsertHeroAttribute creates or updates a hero attribute.
+func (h *Handler) UpsertHeroAttribute(c *gin.Context) {
+	handlePost(c, h.repo.UpsertHeroAttribute)
+}
+
+// DeleteHeroAttribute deletes a hero attribute.
+func (h *Handler) DeleteHeroAttribute(c *gin.Context) {
+	handleDelete(c, "subId", h.repo.DeleteHeroAttribute)
+}
+
+// Defenses
+
+// GetHeroDefenses returns all defenses for a hero.
+func (h *Handler) GetHeroDefenses(c *gin.Context) {
+	handleGetByID(c, "id", h.repo.GetHeroDefenses)
+}
+
+// UpsertHeroDefense creates or updates a hero defense.
+func (h *Handler) UpsertHeroDefense(c *gin.Context) {
+	handlePost(c, h.repo.UpsertHeroDefense)
+}
+
+// DeleteHeroDefense deletes a hero defense.
+func (h *Handler) DeleteHeroDefense(c *gin.Context) {
+	handleDelete(c, "subId", h.repo.DeleteHeroDefense)
+}
+
+// Derived Stats
+
+// GetHeroDerivedStats returns all derived stats for a hero.
+func (h *Handler) GetHeroDerivedStats(c *gin.Context) {
+	handleGetByID(c, "id", h.repo.GetHeroDerivedStats)
+}
+
+// UpsertHeroDerivedStat creates or updates a hero derived stat.
+func (h *Handler) UpsertHeroDerivedStat(c *gin.Context) {
+	handlePost(c, h.repo.UpsertHeroDerivedStat)
+}
+
+// DeleteHeroDerivedStat deletes a hero derived stat.
+func (h *Handler) DeleteHeroDerivedStat(c *gin.Context) {
+	handleDelete(c, "subId", h.repo.DeleteHeroDerivedStat)
+}
+
+// Skills
+
+// GetHeroSkills returns all skills for a hero.
+func (h *Handler) GetHeroSkills(c *gin.Context) {
+	handleGetByID(c, "id", h.repo.GetHeroSkills)
+}
+
+// UpsertHeroSkill creates or updates a hero skill.
+func (h *Handler) UpsertHeroSkill(c *gin.Context) {
+	handlePost(c, h.repo.UpsertHeroSkill)
+}
+
+// DeleteHeroSkill deletes a hero skill.
+func (h *Handler) DeleteHeroSkill(c *gin.Context) {
+	handleDelete(c, "subId", h.repo.DeleteHeroSkill)
+}
+
+// Expertises
+
+// GetHeroExpertises returns all expertises for a hero.
+func (h *Handler) GetHeroExpertises(c *gin.Context) {
+	handleGetByID(c, "id", h.repo.GetHeroExpertises)
+}
+
+// UpsertHeroExpertise creates or updates a hero expertise.
+func (h *Handler) UpsertHeroExpertise(c *gin.Context) {
+	handlePost(c, h.repo.UpsertHeroExpertise)
+}
+
+// DeleteHeroExpertise deletes a hero expertise.
+func (h *Handler) DeleteHeroExpertise(c *gin.Context) {
+	handleDelete(c, "subId", h.repo.DeleteHeroExpertise)
+}
+
+// Talents
+
+// GetHeroTalents returns all talents for a hero.
+func (h *Handler) GetHeroTalents(c *gin.Context) {
+	handleGetByID(c, "id", h.repo.GetHeroTalents)
+}
+
+// UpsertHeroTalent creates or updates a hero talent.
+func (h *Handler) UpsertHeroTalent(c *gin.Context) {
+	handlePost(c, h.repo.UpsertHeroTalent)
+}
+
+// DeleteHeroTalent deletes a hero talent.
+func (h *Handler) DeleteHeroTalent(c *gin.Context) {
+	handleDelete(c, "subId", h.repo.DeleteHeroTalent)
+}
+
+// Equipment
+
+// GetHeroEquipment returns all equipment for a hero.
+func (h *Handler) GetHeroEquipment(c *gin.Context) {
+	handleGetByID(c, "id", h.repo.GetHeroEquipment)
+}
+
+// UpsertHeroEquipment creates or updates a hero equipment.
+func (h *Handler) UpsertHeroEquipment(c *gin.Context) {
+	handlePost(c, h.repo.UpsertHeroEquipment)
+}
+
+// DeleteHeroEquipment deletes a hero equipment.
+func (h *Handler) DeleteHeroEquipment(c *gin.Context) {
+	handleDelete(c, "subId", h.repo.DeleteHeroEquipment)
+}
+
+// Conditions
+
+// GetHeroConditions returns all conditions for a hero.
+func (h *Handler) GetHeroConditions(c *gin.Context) {
+	handleGetByID(c, "id", h.repo.GetHeroConditions)
+}
+
+// UpsertHeroCondition creates or updates a hero condition.
+func (h *Handler) UpsertHeroCondition(c *gin.Context) {
+	handlePost(c, h.repo.UpsertHeroCondition)
+}
+
+// DeleteHeroCondition deletes a hero condition.
+func (h *Handler) DeleteHeroCondition(c *gin.Context) {
+	handleDelete(c, "subId", h.repo.DeleteHeroCondition)
+}
+
+// Injuries
+
+// GetHeroInjuries returns all injuries for a hero.
+func (h *Handler) GetHeroInjuries(c *gin.Context) {
+	handleGetByID(c, "id", h.repo.GetHeroInjuries)
+}
+
+// UpsertHeroInjury creates or updates a hero injury.
+func (h *Handler) UpsertHeroInjury(c *gin.Context) {
+	handlePost(c, h.repo.UpsertHeroInjury)
+}
+
+// DeleteHeroInjury deletes a hero injury.
+func (h *Handler) DeleteHeroInjury(c *gin.Context) {
+	handleDelete(c, "subId", h.repo.DeleteHeroInjury)
+}
+
+// Goals
+
+// GetHeroGoals returns all goals for a hero.
+func (h *Handler) GetHeroGoals(c *gin.Context) {
+	handleGetByID(c, "id", h.repo.GetHeroGoals)
+}
+
+// UpsertHeroGoal creates or updates a hero goal.
+func (h *Handler) UpsertHeroGoal(c *gin.Context) {
+	handlePost(c, h.repo.UpsertHeroGoal)
+}
+
+// DeleteHeroGoal deletes a hero goal.
+func (h *Handler) DeleteHeroGoal(c *gin.Context) {
+	handleDelete(c, "subId", h.repo.DeleteHeroGoal)
+}
+
+// Connections
+
+// GetHeroConnections returns all connections for a hero.
+func (h *Handler) GetHeroConnections(c *gin.Context) {
+	handleGetByID(c, "id", h.repo.GetHeroConnections)
+}
+
+// UpsertHeroConnection creates or updates a hero connection.
+func (h *Handler) UpsertHeroConnection(c *gin.Context) {
+	handlePost(c, h.repo.UpsertHeroConnection)
+}
+
+// DeleteHeroConnection deletes a hero connection.
+func (h *Handler) DeleteHeroConnection(c *gin.Context) {
+	handleDelete(c, "subId", h.repo.DeleteHeroConnection)
+}
+
+// Companions
+
+// GetHeroCompanions returns all companions for a hero.
+func (h *Handler) GetHeroCompanions(c *gin.Context) {
+	handleGetByID(c, "id", h.repo.GetHeroCompanions)
+}
+
+// UpsertHeroCompanion creates or updates a hero companion.
+func (h *Handler) UpsertHeroCompanion(c *gin.Context) {
+	handlePost(c, h.repo.UpsertHeroCompanion)
+}
+
+// DeleteHeroCompanion deletes a hero companion.
+func (h *Handler) DeleteHeroCompanion(c *gin.Context) {
+	handleDelete(c, "subId", h.repo.DeleteHeroCompanion)
+}
+
+// Cultures
+
+// GetHeroCultures returns all cultures for a hero.
+func (h *Handler) GetHeroCultures(c *gin.Context) {
+	handleGetByID(c, "id", h.repo.GetHeroCultures)
+}
+
+// UpsertHeroCulture creates or updates a hero culture.
+func (h *Handler) UpsertHeroCulture(c *gin.Context) {
+	handlePost(c, h.repo.UpsertHeroCulture)
+}
+
+// DeleteHeroCulture deletes a hero culture.
+func (h *Handler) DeleteHeroCulture(c *gin.Context) {
+	handleDelete(c, "subId", h.repo.DeleteHeroCulture)
+}

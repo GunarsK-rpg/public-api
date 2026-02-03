@@ -1,10 +1,5 @@
 package requests
 
-import "errors"
-
-// ErrMissingActionLinkFilter is returned when neither object_id nor action_code is provided.
-var ErrMissingActionLinkFilter = errors.New("either object_id or action_code is required")
-
 // GetExpertisesQuery defines query params for GET /classifiers/expertises.
 type GetExpertisesQuery struct {
 	TypeCode *string `form:"type_code" json:"typeCode,omitempty"`
@@ -41,14 +36,6 @@ type GetActionsQuery struct {
 type GetActionLinksQuery struct {
 	ObjectID   *int64  `form:"object_id" json:"objectId,omitempty"`
 	ActionCode *string `form:"action_code" json:"actionCode,omitempty"`
-}
-
-// Validate checks that at least one filter is provided.
-func (q GetActionLinksQuery) Validate() error {
-	if q.ObjectID == nil && q.ActionCode == nil {
-		return ErrMissingActionLinkFilter
-	}
-	return nil
 }
 
 // GetEquipmentsQuery defines query params for GET /classifiers/equipments.

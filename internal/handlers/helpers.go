@@ -4,7 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 
@@ -13,11 +16,33 @@ import (
 	"github.com/GunarsK-rpg/public-api/internal/repository"
 )
 
+// ----------------------------------------------------------------------------
+// Repository function types
+// ----------------------------------------------------------------------------
+
+// RepoFunc calls a repository method and returns JSONB.
+type RepoFunc func(ctx context.Context, auth repository.AuthContext) (json.RawMessage, error)
+
+// RepoFilterFunc calls a repository method with a JSONB filter.
+type RepoFilterFunc func(ctx context.Context, auth repository.AuthContext, filter json.RawMessage) (json.RawMessage, error)
+
+// RepoIDFunc calls a repository method with an ID parameter.
+type RepoIDFunc func(ctx context.Context, auth repository.AuthContext, id int64) (json.RawMessage, error)
+
+// RepoUpsertFunc calls a repository upsert method with JSON data.
+type RepoUpsertFunc func(ctx context.Context, auth repository.AuthContext, data json.RawMessage) (json.RawMessage, error)
+
+// RepoDeleteFunc calls a repository delete method.
+type RepoDeleteFunc func(ctx context.Context, auth repository.AuthContext, id int64) (bool, error)
+
+// ----------------------------------------------------------------------------
+// Auth context
+// ----------------------------------------------------------------------------
+
 // ErrMissingAuthContext indicates auth middleware did not run or set context values.
 var ErrMissingAuthContext = errors.New("missing auth context: user_id or username not set")
 
 // GetAuthContext extracts authentication context from Gin context.
-// Returns error if auth middleware has not set the required values.
 func GetAuthContext(c *gin.Context) (repository.AuthContext, error) {
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -47,11 +72,12 @@ func GetAuthContext(c *gin.Context) (repository.AuthContext, error) {
 	}, nil
 }
 
-// RepoFunc is a function that calls a repository method and returns JSONB.
-type RepoFunc func(ctx context.Context, auth repository.AuthContext) (json.RawMessage, error)
+// ----------------------------------------------------------------------------
+// Request handlers
+// ----------------------------------------------------------------------------
 
-// handleJSONResponse handles the common pattern: auth → repo call → error handling → JSON response.
-func handleJSONResponse(c *gin.Context, fn RepoFunc) {
+// handleGet: auth → repo call → JSON response
+func handleGet(c *gin.Context, fn RepoFunc) {
 	auth, err := GetAuthContext(c)
 	if err != nil {
 		commonHandlers.RespondError(c, http.StatusUnauthorized, "unauthorized")
@@ -67,11 +93,8 @@ func handleJSONResponse(c *gin.Context, fn RepoFunc) {
 	c.Data(http.StatusOK, "application/json", result)
 }
 
-// RepoFilterFunc is a function that calls a repository method with a JSONB filter and returns JSONB.
-type RepoFilterFunc func(ctx context.Context, auth repository.AuthContext, filter json.RawMessage) (json.RawMessage, error)
-
-// handleFilteredResponse binds query params, marshals to JSON, and calls a filtered repo method.
-func handleFilteredResponse[Q any](c *gin.Context, fn RepoFilterFunc) {
+// handleGetFiltered: bind query → marshal to JSON → repo call → JSON response
+func handleGetFiltered[Q any](c *gin.Context, fn RepoFilterFunc) {
 	var query Q
 	if err := c.ShouldBindQuery(&query); err != nil {
 		commonHandlers.RespondError(c, http.StatusBadRequest, "invalid query parameters")
@@ -84,36 +107,98 @@ func handleFilteredResponse[Q any](c *gin.Context, fn RepoFilterFunc) {
 		return
 	}
 
-	handleJSONResponse(c, func(ctx context.Context, auth repository.AuthContext) (json.RawMessage, error) {
+	handleGet(c, func(ctx context.Context, auth repository.AuthContext) (json.RawMessage, error) {
 		return fn(ctx, auth, filter)
 	})
 }
 
-// Validatable is implemented by query structs that require custom validation.
-type Validatable interface {
-	Validate() error
-}
-
-// handleValidatedFilteredResponse is like handleFilteredResponse but calls Validate() on the query.
-func handleValidatedFilteredResponse[Q Validatable](c *gin.Context, fn RepoFilterFunc) {
-	var query Q
-	if err := c.ShouldBindQuery(&query); err != nil {
-		commonHandlers.RespondError(c, http.StatusBadRequest, "invalid query parameters")
+// handleGetByID: auth → path param → repo call → null check → JSON response
+func handleGetByID(c *gin.Context, paramName string, fn RepoIDFunc) {
+	auth, err := GetAuthContext(c)
+	if err != nil {
+		commonHandlers.RespondError(c, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
-	if err := query.Validate(); err != nil {
+	id, err := getPathParamInt64(c, paramName)
+	if err != nil {
 		commonHandlers.RespondError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	filter, err := json.Marshal(query)
+	result, err := fn(c.Request.Context(), auth, id)
 	if err != nil {
-		commonHandlers.RespondError(c, http.StatusInternalServerError, "failed to build filter")
+		HandlePgxError(c, err)
 		return
 	}
 
-	handleJSONResponse(c, func(ctx context.Context, auth repository.AuthContext) (json.RawMessage, error) {
-		return fn(ctx, auth, filter)
-	})
+	if result == nil || string(result) == "null" {
+		commonHandlers.RespondError(c, http.StatusNotFound, "not found")
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", result)
+}
+
+// handlePost: auth → read body → repo call → JSON response
+func handlePost(c *gin.Context, fn RepoUpsertFunc) {
+	auth, err := GetAuthContext(c)
+	if err != nil {
+		commonHandlers.RespondError(c, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	body, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		commonHandlers.RespondError(c, http.StatusBadRequest, "failed to read request body")
+		return
+	}
+
+	result, err := fn(c.Request.Context(), auth, body)
+	if err != nil {
+		HandlePgxError(c, err)
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", result)
+}
+
+// handleDelete: auth → path param → repo call → 204 or 404
+func handleDelete(c *gin.Context, paramName string, fn RepoDeleteFunc) {
+	auth, err := GetAuthContext(c)
+	if err != nil {
+		commonHandlers.RespondError(c, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	id, err := getPathParamInt64(c, paramName)
+	if err != nil {
+		commonHandlers.RespondError(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	deleted, err := fn(c.Request.Context(), auth, id)
+	if err != nil {
+		HandlePgxError(c, err)
+		return
+	}
+
+	if !deleted {
+		commonHandlers.RespondError(c, http.StatusNotFound, "not found")
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
+// ----------------------------------------------------------------------------
+// Internal utilities
+// ----------------------------------------------------------------------------
+
+func getPathParamInt64(c *gin.Context, param string) (int64, error) {
+	str := c.Param(param)
+	if str == "" {
+		return 0, fmt.Errorf("missing path parameter: %s", param)
+	}
+	return strconv.ParseInt(str, 10, 64)
 }
