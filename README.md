@@ -131,7 +131,7 @@ go test ./...                               # Test
 | `PORT` | Server port | `8182` |
 | `DB_HOST` | PostgreSQL host | `localhost` |
 | `DB_PORT` | PostgreSQL port | `5432` |
-| `DB_USER` | Database user | `postgres` |
+| `DB_USER` | Database user | `cosmere_app` |
 | `DB_PASSWORD` | Database password | - |
 | `DB_NAME` | Database name | `cosmere_rpg` |
 | `DB_SSL_MODE` | PostgreSQL SSL mode | `disable` |
