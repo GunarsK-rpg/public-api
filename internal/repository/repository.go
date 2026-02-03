@@ -2,77 +2,88 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"log/slog"
-	"time"
 
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
-
-	"github.com/GunarsK-templates/template-api/internal/config"
-	"github.com/GunarsK-templates/template-api/internal/models"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// Repository defines the interface for data access
+// AuthContext carries session identity for audit.set_context() calls.
+type AuthContext struct {
+	UserID    int64
+	Username  string
+	ClientIP  string
+	UserAgent string
+}
+
+// Repository defines the interface for data access.
 type Repository interface {
-	// Item operations
-	GetAllItems(ctx context.Context) ([]models.Item, error)
-	GetItemByID(ctx context.Context, id int64) (*models.Item, error)
-	CreateItem(ctx context.Context, item *models.Item) error
-	UpdateItem(ctx context.Context, item *models.Item) error
-	DeleteItem(ctx context.Context, id int64) error
+	Ping(ctx context.Context) error
 }
 
 type repository struct {
-	db *gorm.DB
+	pool *pgxpool.Pool
 }
 
-// New creates a new repository instance
-func New(db *gorm.DB) Repository {
-	return &repository{db: db}
+// New creates a new repository backed by a pgx pool.
+func New(pool *pgxpool.Pool) Repository {
+	return &repository{pool: pool}
 }
 
-// ConnectDB establishes a database connection
-func ConnectDB(cfg *config.Config) (*gorm.DB, error) {
-	// Configure GORM logger
-	gormLogLevel := logger.Silent
-	if cfg.Service.Environment == "development" {
-		gormLogLevel = logger.Info
-	}
+func (r *repository) Ping(ctx context.Context) error {
+	return r.pool.Ping(ctx)
+}
 
-	gormConfig := &gorm.Config{
-		Logger: logger.Default.LogMode(gormLogLevel),
-	}
-
-	db, err := gorm.Open(postgres.Open(cfg.Database.DSN()), gormConfig)
+// withAuditTx begins a transaction, sets audit context, executes fn, and commits.
+//
+//nolint:unused
+func (r *repository) withAuditTx(ctx context.Context, auth AuthContext, fn func(tx pgx.Tx) error) error {
+	tx, err := r.pool.Begin(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %w", err)
+		return fmt.Errorf("begin tx: %w", err)
 	}
+	defer func() { _ = tx.Rollback(ctx) }()
 
-	// Configure connection pool
-	sqlDB, err := db.DB()
+	_, err = tx.Exec(ctx,
+		"SELECT audit.set_context($1, $2, $3, $4)",
+		auth.UserID, auth.Username, auth.ClientIP, auth.UserAgent,
+	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get underlying sql.DB: %w", err)
+		return fmt.Errorf("set audit context: %w", err)
 	}
 
-	sqlDB.SetMaxOpenConns(25)
-	sqlDB.SetMaxIdleConns(10)
-	sqlDB.SetConnMaxLifetime(time.Hour)
-	sqlDB.SetConnMaxIdleTime(10 * time.Minute)
-
-	slog.Info("Database connection established")
-
-	return db, nil
-}
-
-// checkRowsAffected verifies that at least one row was affected
-func checkRowsAffected(result *gorm.DB) error {
-	if result.Error != nil {
-		return result.Error
+	if err := fn(tx); err != nil {
+		return err
 	}
-	if result.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit tx: %w", err)
 	}
+
 	return nil
+}
+
+// callFunctionInTx executes a query inside a transaction with audit context set.
+// Returns the JSONB result from the database function.
+//
+//nolint:unused
+func (r *repository) callFunctionInTx(ctx context.Context, auth AuthContext, query string, args ...any) (json.RawMessage, error) {
+	var result json.RawMessage
+	err := r.withAuditTx(ctx, auth, func(tx pgx.Tx) error {
+		return tx.QueryRow(ctx, query, args...).Scan(&result)
+	})
+	return result, err
+}
+
+// execFunctionInTx executes a query inside a transaction with audit context set.
+// Returns the boolean result from delete functions.
+//
+//nolint:unused
+func (r *repository) execFunctionInTx(ctx context.Context, auth AuthContext, query string, args ...any) (bool, error) {
+	var result bool
+	err := r.withAuditTx(ctx, auth, func(tx pgx.Tx) error {
+		return tx.QueryRow(ctx, query, args...).Scan(&result)
+	})
+	return result, err
 }
