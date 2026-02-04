@@ -7,6 +7,9 @@ import (
 
 // ClassifierRepository defines methods for classifier data access.
 type ClassifierRepository interface {
+	// Batch getter (all classifiers in one call)
+	GetAllClassifiers(ctx context.Context, auth AuthContext) (json.RawMessage, error)
+
 	// Simple getters (no parameters)
 	GetAttributeTypes(ctx context.Context, auth AuthContext) (json.RawMessage, error)
 	GetAttributes(ctx context.Context, auth AuthContext) (json.RawMessage, error)
@@ -42,6 +45,12 @@ type ClassifierRepository interface {
 	GetActions(ctx context.Context, auth AuthContext, filter json.RawMessage) (json.RawMessage, error)
 	GetActionLinks(ctx context.Context, auth AuthContext, filter json.RawMessage) (json.RawMessage, error)
 	GetEquipments(ctx context.Context, auth AuthContext, filter json.RawMessage) (json.RawMessage, error)
+}
+
+// Batch getter (all classifiers in one call)
+
+func (r *repository) GetAllClassifiers(ctx context.Context, auth AuthContext) (json.RawMessage, error) {
+	return r.callFunc(ctx, auth, "SELECT classifiers.get_all_classifiers()")
 }
 
 // Simple getters (no parameters)
