@@ -6,6 +6,12 @@ import (
 	"github.com/GunarsK-rpg/public-api/internal/models/requests"
 )
 
+// Batch getter (all classifiers in one call)
+
+func (h *Handler) GetAllClassifiers(c *gin.Context) {
+	handleGet(c, h.repo.GetAllClassifiers)
+}
+
 // Simple getters (no parameters)
 
 func (h *Handler) GetAttributeTypes(c *gin.Context) {

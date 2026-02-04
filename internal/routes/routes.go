@@ -41,6 +41,9 @@ func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, he
 	classifiers := v1.Group("/classifiers")
 	classifiers.Use(commonMiddleware.RequirePermission(constants.ResourceClassifiers, commonMiddleware.LevelRead))
 	{
+		// Batch getter (all classifiers in one call)
+		classifiers.GET("", handler.GetAllClassifiers)
+
 		// Simple getters (no parameters)
 		classifiers.GET("/attribute-types", handler.GetAttributeTypes)
 		classifiers.GET("/attributes", handler.GetAttributes)
