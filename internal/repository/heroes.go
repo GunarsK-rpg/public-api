@@ -44,6 +44,12 @@ type HeroRepository interface {
 	UpsertHeroCompanion(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 	UpsertHeroCulture(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 
+	// Resource patches
+	PatchHeroHealth(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
+	PatchHeroFocus(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
+	PatchHeroInvestiture(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
+	PatchHeroCurrency(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
+
 	// Sub-resource deletes (13)
 	DeleteHeroAttribute(ctx context.Context, auth AuthContext, id int64) (bool, error)
 	DeleteHeroDefense(ctx context.Context, auth AuthContext, id int64) (bool, error)
@@ -188,6 +194,24 @@ func (r *repository) UpsertHeroCompanion(ctx context.Context, auth AuthContext, 
 
 func (r *repository) UpsertHeroCulture(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error) {
 	return r.callFunc(ctx, auth, "SELECT heroes.upsert_hero_culture($1::jsonb)", data)
+}
+
+// Resource patches
+
+func (r *repository) PatchHeroHealth(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error) {
+	return r.callFunc(ctx, auth, "SELECT heroes.patch_hero_health($1::jsonb)", data)
+}
+
+func (r *repository) PatchHeroFocus(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error) {
+	return r.callFunc(ctx, auth, "SELECT heroes.patch_hero_focus($1::jsonb)", data)
+}
+
+func (r *repository) PatchHeroInvestiture(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error) {
+	return r.callFunc(ctx, auth, "SELECT heroes.patch_hero_investiture($1::jsonb)", data)
+}
+
+func (r *repository) PatchHeroCurrency(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error) {
+	return r.callFunc(ctx, auth, "SELECT heroes.patch_hero_currency($1::jsonb)", data)
 }
 
 // Sub-resource deletes
