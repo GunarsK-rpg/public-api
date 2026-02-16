@@ -278,3 +278,25 @@ func (h *Handler) UpsertHeroCulture(c *gin.Context) {
 func (h *Handler) DeleteHeroCulture(c *gin.Context) {
 	handleDelete(c, "subId", h.repo.DeleteHeroCulture)
 }
+
+// Resource patches
+
+// PatchHeroHealth updates hero current health.
+func (h *Handler) PatchHeroHealth(c *gin.Context) {
+	handlePost(c, h.repo.PatchHeroHealth)
+}
+
+// PatchHeroFocus updates hero current focus.
+func (h *Handler) PatchHeroFocus(c *gin.Context) {
+	handlePost(c, h.repo.PatchHeroFocus)
+}
+
+// PatchHeroInvestiture updates hero current investiture.
+func (h *Handler) PatchHeroInvestiture(c *gin.Context) {
+	handlePost(c, h.repo.PatchHeroInvestiture)
+}
+
+// PatchHeroCurrency updates hero currency.
+func (h *Handler) PatchHeroCurrency(c *gin.Context) {
+	handlePost(c, h.repo.PatchHeroCurrency)
+}
