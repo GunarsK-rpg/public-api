@@ -151,13 +151,13 @@ func handleGetByString(c *gin.Context, paramName string, fn RepoStringFunc) {
 		return
 	}
 
-	code := c.Param(paramName)
-	if code == "" {
+	value := c.Param(paramName)
+	if value == "" {
 		commonHandlers.RespondError(c, http.StatusBadRequest, fmt.Sprintf("missing path parameter: %s", paramName))
 		return
 	}
 
-	result, err := fn(c.Request.Context(), auth, code)
+	result, err := fn(c.Request.Context(), auth, value)
 	if err != nil {
 		HandlePgxError(c, err)
 		return
