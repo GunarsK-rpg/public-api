@@ -120,6 +120,7 @@ func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, he
 	campaigns.Use(commonMiddleware.RequirePermission(constants.ResourceCampaigns, commonMiddleware.LevelRead))
 	{
 		campaigns.GET("", handler.GetCampaigns)
+		campaigns.GET("/join/:code", handler.GetCampaignByCode)
 		campaigns.GET("/:id", handler.GetCampaign)
 		campaigns.POST("", commonMiddleware.RequirePermission(constants.ResourceCampaigns, commonMiddleware.LevelEdit), handler.CreateCampaign)
 		campaigns.PUT("/:id", commonMiddleware.RequirePermission(constants.ResourceCampaigns, commonMiddleware.LevelEdit), handler.UpdateCampaign)
