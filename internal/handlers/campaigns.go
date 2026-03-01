@@ -14,6 +14,11 @@ func (h *Handler) GetCampaign(c *gin.Context) {
 	handleGetByID(c, "id", h.repo.GetCampaign)
 }
 
+// GetCampaignByCode returns a campaign by invite code.
+func (h *Handler) GetCampaignByCode(c *gin.Context) {
+	handleGetByString(c, "code", h.repo.GetCampaignByCode)
+}
+
 // CreateCampaign creates a new campaign.
 func (h *Handler) CreateCampaign(c *gin.Context) {
 	handlePost(c, h.repo.UpsertCampaign)

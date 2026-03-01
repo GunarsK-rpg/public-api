@@ -32,6 +32,9 @@ type RepoIDFunc func(ctx context.Context, auth repository.AuthContext, id int64)
 // RepoUpsertFunc calls a repository upsert method with JSON data.
 type RepoUpsertFunc func(ctx context.Context, auth repository.AuthContext, data json.RawMessage) (json.RawMessage, error)
 
+// RepoStringFunc calls a repository method with a string parameter.
+type RepoStringFunc func(ctx context.Context, auth repository.AuthContext, code string) (json.RawMessage, error)
+
 // RepoDeleteFunc calls a repository delete method.
 type RepoDeleteFunc func(ctx context.Context, auth repository.AuthContext, id int64) (bool, error)
 
@@ -127,6 +130,34 @@ func handleGetByID(c *gin.Context, paramName string, fn RepoIDFunc) {
 	}
 
 	result, err := fn(c.Request.Context(), auth, id)
+	if err != nil {
+		HandlePgxError(c, err)
+		return
+	}
+
+	if result == nil || string(result) == "null" {
+		commonHandlers.RespondError(c, http.StatusNotFound, "not found")
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", result)
+}
+
+// handleGetByString: auth → string path param → repo call → null check → JSON response
+func handleGetByString(c *gin.Context, paramName string, fn RepoStringFunc) {
+	auth, err := GetAuthContext(c)
+	if err != nil {
+		commonHandlers.RespondError(c, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	code := c.Param(paramName)
+	if code == "" {
+		commonHandlers.RespondError(c, http.StatusBadRequest, fmt.Sprintf("missing path parameter: %s", paramName))
+		return
+	}
+
+	result, err := fn(c.Request.Context(), auth, code)
 	if err != nil {
 		HandlePgxError(c, err)
 		return

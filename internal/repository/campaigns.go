@@ -9,6 +9,7 @@ import (
 type CampaignRepository interface {
 	GetCampaigns(ctx context.Context, auth AuthContext) (json.RawMessage, error)
 	GetCampaign(ctx context.Context, auth AuthContext, id int64) (json.RawMessage, error)
+	GetCampaignByCode(ctx context.Context, auth AuthContext, code string) (json.RawMessage, error)
 	UpsertCampaign(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 	DeleteCampaign(ctx context.Context, auth AuthContext, id int64) (bool, error)
 }
@@ -19,6 +20,10 @@ func (r *repository) GetCampaigns(ctx context.Context, auth AuthContext) (json.R
 
 func (r *repository) GetCampaign(ctx context.Context, auth AuthContext, id int64) (json.RawMessage, error) {
 	return r.callFunc(ctx, auth, "SELECT campaign.get_campaign($1)", id)
+}
+
+func (r *repository) GetCampaignByCode(ctx context.Context, auth AuthContext, code string) (json.RawMessage, error) {
+	return r.callFunc(ctx, auth, "SELECT campaign.get_campaign(p_code := $1)", code)
 }
 
 func (r *repository) UpsertCampaign(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error) {
