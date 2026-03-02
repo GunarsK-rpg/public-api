@@ -36,6 +36,9 @@ func HandlePgxError(c *gin.Context, err error) {
 		case "42501": // insufficient_privilege
 			commonHandlers.RespondError(c, http.StatusForbidden, "access denied")
 			return
+		case "22023": // invalid_parameter_value
+			commonHandlers.RespondError(c, http.StatusBadRequest, pgErr.Message)
+			return
 		case "P0001": // raise_exception (validation errors)
 			commonHandlers.RespondError(c, http.StatusBadRequest, pgErr.Message)
 			return
