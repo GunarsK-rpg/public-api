@@ -24,7 +24,7 @@ func (h *Handler) GetHeroes(c *gin.Context) {
 		return
 	}
 
-	result, err := h.repo.GetHeroes(c.Request.Context(), auth, query.CampaignID, query.Limit, query.Offset)
+	result, err := h.repo.GetHeroes(c.Request.Context(), auth, query.CampaignID)
 	if err != nil {
 		HandlePgxError(c, err)
 		return

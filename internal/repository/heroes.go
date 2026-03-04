@@ -8,7 +8,7 @@ import (
 // HeroRepository defines methods for hero data access.
 type HeroRepository interface {
 	// Core CRUD
-	GetHeroes(ctx context.Context, auth AuthContext, campaignID *int64, limit *int, offset int) (json.RawMessage, error)
+	GetHeroes(ctx context.Context, auth AuthContext, campaignID *int64) (json.RawMessage, error)
 	GetHero(ctx context.Context, auth AuthContext, id int64) (json.RawMessage, error)
 	GetHeroSheet(ctx context.Context, auth AuthContext, id int64) (json.RawMessage, error)
 	UpsertHero(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
@@ -68,8 +68,8 @@ type HeroRepository interface {
 
 // Core CRUD implementations
 
-func (r *repository) GetHeroes(ctx context.Context, auth AuthContext, campaignID *int64, limit *int, offset int) (json.RawMessage, error) {
-	return r.callFunc(ctx, auth, "SELECT heroes.get_heroes($1, $2, $3)", campaignID, limit, offset)
+func (r *repository) GetHeroes(ctx context.Context, auth AuthContext, campaignID *int64) (json.RawMessage, error) {
+	return r.callFunc(ctx, auth, "SELECT heroes.get_heroes($1)", campaignID)
 }
 
 func (r *repository) GetHero(ctx context.Context, auth AuthContext, id int64) (json.RawMessage, error) {
