@@ -35,7 +35,7 @@ func (h *Handler) GetAllClassifiers(c *gin.Context) {
 			slog.Warn("redis cache get failed", "key", classifiersCacheKey, "error", err)
 		}
 		if cached != nil {
-			c.Header("Cache-Control", "public, max-age=3600")
+			c.Header("Cache-Control", "private, max-age=3600")
 			c.Data(http.StatusOK, "application/json", cached)
 			return
 		}
@@ -55,7 +55,7 @@ func (h *Handler) GetAllClassifiers(c *gin.Context) {
 		}
 	}
 
-	c.Header("Cache-Control", "public, max-age=3600")
+	c.Header("Cache-Control", "private, max-age=3600")
 	c.Data(http.StatusOK, "application/json", result)
 }
 
