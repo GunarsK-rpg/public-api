@@ -14,6 +14,7 @@ import (
 	"github.com/GunarsK-portfolio/portfolio-common/middleware"
 	"github.com/GunarsK-portfolio/portfolio-common/server"
 
+	"github.com/GunarsK-rpg/public-api/internal/cache"
 	"github.com/GunarsK-rpg/public-api/internal/config"
 	"github.com/GunarsK-rpg/public-api/internal/database"
 	"github.com/GunarsK-rpg/public-api/internal/handlers"
@@ -46,11 +47,16 @@ func main() {
 	}
 	defer pool.Close()
 
+	redisClient := cache.NewRedisClient(cfg.Redis, cfg.Service.Environment)
+	defer redisClient.Close()
+
 	healthAgg := health.NewAggregator(3 * time.Second)
 	healthAgg.Register(database.NewPgxChecker(pool))
+	healthAgg.Register(health.NewRedisChecker(redisClient))
 
+	appCache := cache.New(redisClient)
 	repo := repository.New(pool)
-	handler := handlers.New(repo)
+	handler := handlers.New(repo, appCache)
 
 	if cfg.Service.Environment == "production" {
 		gin.SetMode(gin.ReleaseMode)
