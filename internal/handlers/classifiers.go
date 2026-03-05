@@ -1,15 +1,62 @@
 package handlers
 
 import (
+	"log/slog"
+	"net/http"
+	"time"
+
 	"github.com/gin-gonic/gin"
 
+	commonHandlers "github.com/GunarsK-portfolio/portfolio-common/handlers"
+
 	"github.com/GunarsK-rpg/public-api/internal/models/requests"
+)
+
+const (
+	classifiersCacheKey = "rpg:classifiers:all"
+	classifiersCacheTTL = 1 * time.Hour
 )
 
 // Batch getter (all classifiers in one call)
 
 func (h *Handler) GetAllClassifiers(c *gin.Context) {
-	handleGet(c, h.repo.GetAllClassifiers)
+	ctx := c.Request.Context()
+
+	auth, err := GetAuthContext(c)
+	if err != nil {
+		commonHandlers.RespondError(c, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	// Try cache first
+	if h.cache != nil {
+		cached, err := h.cache.Get(ctx, classifiersCacheKey)
+		if err != nil {
+			slog.Warn("redis cache get failed", "key", classifiersCacheKey, "error", err)
+		}
+		if cached != nil {
+			c.Header("Cache-Control", "public, max-age=3600")
+			c.Data(http.StatusOK, "application/json", cached)
+			return
+		}
+	}
+
+	// Cache miss: fetch from DB
+	result, err := h.repo.GetAllClassifiers(ctx, auth)
+	if err != nil {
+		HandlePgxError(c, err)
+		return
+	}
+
+	// Store in cache (best-effort)
+	if h.cache != nil {
+		if err := h.cache.Set(ctx, classifiersCacheKey, result, classifiersCacheTTL); err != nil {
+			slog.Warn("redis cache set failed", "key", classifiersCacheKey, "error", err)
+		}
+	}
+
+	c.Header("Cache-Control", "public, max-age=3600")
+	c.Data(http.StatusOK, "application/json", result)
 }
 
 // Simple getters (no parameters)

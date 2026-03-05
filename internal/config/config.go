@@ -15,6 +15,7 @@ import (
 type Config struct {
 	Service     common.ServiceConfig
 	Database    common.DatabaseConfig
+	Redis       common.RedisConfig
 	JWTSecret   string `validate:"required,min=32"`
 	MaxBodySize int64  `validate:"min=1024"` // Minimum 1KB
 }
@@ -24,6 +25,7 @@ func Load() *Config {
 	cfg := &Config{
 		Service:     common.NewServiceConfig(8090),
 		Database:    common.NewDatabaseConfig(),
+		Redis:       common.NewRedisConfig(),
 		JWTSecret:   common.GetEnvRequired("JWT_SECRET"),
 		MaxBodySize: getEnvInt64("MAX_BODY_SIZE", 64<<10), // Default 64KB
 	}
