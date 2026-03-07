@@ -111,6 +111,10 @@ jobs:
         id: image
         run: echo "name=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
+      - name: Get weekly cache key
+        id: week
+        run: echo "key=$(date +%Y-W%V)" >> "$GITHUB_OUTPUT"
+
       - name: Build Docker image
         uses: docker/build-push-action@v6
         with:
@@ -118,6 +122,8 @@ jobs:
           push: false
           load: true
           tags: ${{ steps.image.outputs.name }}:${{ github.sha }}
+          build-args: |
+            CACHE_BUST=${{ steps.week.outputs.key }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
