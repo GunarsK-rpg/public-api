@@ -111,6 +111,10 @@ jobs:
         id: image
         run: echo "name=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
+      - name: Get weekly cache key
+        id: week
+        run: echo "key=$(date +%Y-W%V)" >> "$GITHUB_OUTPUT"
+
       - name: Build Docker image
         uses: docker/build-push-action@v6
         with:
@@ -118,18 +122,20 @@ jobs:
           push: false
           load: true
           tags: ${{ steps.image.outputs.name }}:${{ github.sha }}
+          build-args: |
+            CACHE_BUST=${{ steps.week.outputs.key }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.34.1
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           image-ref: ${{ steps.image.outputs.name }}:${{ github.sha }}
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
           exit-code: '1'
-          version: 'v0.69.2'
+          version: 'v0.69.3'
 
       - name: Upload Trivy results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v4
@@ -138,13 +144,13 @@ jobs:
           sarif_file: 'trivy-results.sarif'
 
       - name: Run Trivy vulnerability scanner (table output)
-        uses: aquasecurity/trivy-action@0.34.1
+        uses: aquasecurity/trivy-action@0.35.0
         if: always()
         with:
           image-ref: ${{ steps.image.outputs.name }}:${{ github.sha }}
           format: 'table'
           severity: 'CRITICAL,HIGH,MEDIUM'
-          version: 'v0.69.2'
+          version: 'v0.69.3'
 
   # Job 5: Static analysis with gosec
   security-analysis:
@@ -164,9 +170,16 @@ jobs:
           cache: true
 
       - name: Run gosec Security Scanner
-        uses: securego/gosec@v2.23.0
+        uses: securego/gosec@v2.24.7
         with:
           args: '-no-fail -fmt sarif -out gosec-results.sarif ./...'
+
+      - name: Fix gosec SARIF output
+        if: always()
+        run: |
+          jq '(.runs[].tool.driver.rules // [])[] |= del(.relationships)' \
+            gosec-results.sarif > gosec-results-fixed.sarif
+          mv gosec-results-fixed.sarif gosec-results.sarif
 
       - name: Upload gosec results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v4
