@@ -112,6 +112,10 @@ func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, he
 		heroes.POST("/:id/equipment/:subId/modifications", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelEdit), handler.AddEquipmentModification)
 		heroes.DELETE("/:id/equipment/:subId/modifications/:modId", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelDelete), handler.RemoveEquipmentModification)
 
+		// Favorite action management
+		heroes.POST("/:id/favorites", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelEdit), handler.AddFavoriteAction)
+		heroes.DELETE("/:id/favorites/:subId", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelDelete), handler.RemoveFavoriteAction)
+
 		// Resource patch routes
 		heroes.PATCH("/:id/health", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelEdit), handler.PatchHeroHealth)
 		heroes.PATCH("/:id/focus", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelEdit), handler.PatchHeroFocus)

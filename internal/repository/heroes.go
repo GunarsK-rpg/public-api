@@ -54,6 +54,10 @@ type HeroRepository interface {
 	AddEquipmentModification(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 	RemoveEquipmentModification(ctx context.Context, auth AuthContext, id int64) (bool, error)
 
+	// Favorite action management
+	AddFavoriteAction(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
+	RemoveFavoriteAction(ctx context.Context, auth AuthContext, id int64) (bool, error)
+
 	// Sub-resource deletes (13)
 	DeleteHeroAttribute(ctx context.Context, auth AuthContext, id int64) (bool, error)
 	DeleteHeroDefense(ctx context.Context, auth AuthContext, id int64) (bool, error)
@@ -226,6 +230,16 @@ func (r *repository) AddEquipmentModification(ctx context.Context, auth AuthCont
 
 func (r *repository) RemoveEquipmentModification(ctx context.Context, auth AuthContext, id int64) (bool, error) {
 	return r.execFunc(ctx, auth, "SELECT heroes.delete_hero_equipment_modification($1)", id)
+}
+
+// Favorite action management
+
+func (r *repository) AddFavoriteAction(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error) {
+	return r.callFunc(ctx, auth, "SELECT heroes.upsert_hero_favorite_action($1::jsonb)", data)
+}
+
+func (r *repository) RemoveFavoriteAction(ctx context.Context, auth AuthContext, id int64) (bool, error) {
+	return r.execFunc(ctx, auth, "SELECT heroes.delete_hero_favorite_action($1)", id)
 }
 
 // Sub-resource deletes
