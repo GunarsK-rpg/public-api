@@ -108,6 +108,10 @@ func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, he
 		registerHeroSubResource(heroes, "companions", handler.GetHeroCompanions, handler.UpsertHeroCompanion, handler.DeleteHeroCompanion)
 		registerHeroSubResource(heroes, "cultures", handler.GetHeroCultures, handler.UpsertHeroCulture, handler.DeleteHeroCulture)
 
+		// Equipment modification management
+		heroes.POST("/:id/equipment/:subId/modifications", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelEdit), handler.AddEquipmentModification)
+		heroes.DELETE("/:id/equipment/:subId/modifications/:modId", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelDelete), handler.RemoveEquipmentModification)
+
 		// Resource patch routes
 		heroes.PATCH("/:id/health", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelEdit), handler.PatchHeroHealth)
 		heroes.PATCH("/:id/focus", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelEdit), handler.PatchHeroFocus)

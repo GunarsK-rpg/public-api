@@ -50,6 +50,10 @@ type HeroRepository interface {
 	PatchHeroInvestiture(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 	PatchHeroCurrency(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 
+	// Equipment modification management
+	AddEquipmentModification(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
+	RemoveEquipmentModification(ctx context.Context, auth AuthContext, id int64) (bool, error)
+
 	// Sub-resource deletes (13)
 	DeleteHeroAttribute(ctx context.Context, auth AuthContext, id int64) (bool, error)
 	DeleteHeroDefense(ctx context.Context, auth AuthContext, id int64) (bool, error)
@@ -212,6 +216,16 @@ func (r *repository) PatchHeroInvestiture(ctx context.Context, auth AuthContext,
 
 func (r *repository) PatchHeroCurrency(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error) {
 	return r.callFunc(ctx, auth, "SELECT heroes.patch_hero_currency($1::jsonb)", data)
+}
+
+// Equipment modification management
+
+func (r *repository) AddEquipmentModification(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error) {
+	return r.callFunc(ctx, auth, "SELECT heroes.upsert_hero_equipment_modification($1::jsonb)", data)
+}
+
+func (r *repository) RemoveEquipmentModification(ctx context.Context, auth AuthContext, id int64) (bool, error) {
+	return r.execFunc(ctx, auth, "SELECT heroes.delete_hero_equipment_modification($1)", id)
 }
 
 // Sub-resource deletes
