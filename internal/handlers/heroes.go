@@ -177,6 +177,18 @@ func (h *Handler) DeleteHeroEquipment(c *gin.Context) {
 	handleDelete(c, "subId", h.repo.DeleteHeroEquipment)
 }
 
+// Equipment Modifications
+
+// AddEquipmentModification adds a modification to hero equipment.
+func (h *Handler) AddEquipmentModification(c *gin.Context) {
+	handlePost(c, h.repo.AddEquipmentModification)
+}
+
+// RemoveEquipmentModification removes a modification from hero equipment.
+func (h *Handler) RemoveEquipmentModification(c *gin.Context) {
+	handleDelete(c, "modId", h.repo.RemoveEquipmentModification)
+}
+
 // Conditions
 
 // GetHeroConditions returns all conditions for a hero.
