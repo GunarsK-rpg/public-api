@@ -189,6 +189,18 @@ func (h *Handler) RemoveEquipmentModification(c *gin.Context) {
 	handleDelete(c, "modId", h.repo.RemoveEquipmentModification)
 }
 
+// Favorite actions
+
+// AddFavoriteAction adds an action to hero favorites.
+func (h *Handler) AddFavoriteAction(c *gin.Context) {
+	handlePost(c, h.repo.AddFavoriteAction)
+}
+
+// RemoveFavoriteAction removes an action from hero favorites.
+func (h *Handler) RemoveFavoriteAction(c *gin.Context) {
+	handleDelete(c, "subId", h.repo.RemoveFavoriteAction)
+}
+
 // Conditions
 
 // GetHeroConditions returns all conditions for a hero.
