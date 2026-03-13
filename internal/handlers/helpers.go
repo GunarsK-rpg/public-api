@@ -23,9 +23,6 @@ import (
 // RepoFunc calls a repository method and returns JSONB.
 type RepoFunc func(ctx context.Context, auth repository.AuthContext) (json.RawMessage, error)
 
-// RepoFilterFunc calls a repository method with a JSONB filter.
-type RepoFilterFunc func(ctx context.Context, auth repository.AuthContext, filter json.RawMessage) (json.RawMessage, error)
-
 // RepoIDFunc calls a repository method with an ID parameter.
 type RepoIDFunc func(ctx context.Context, auth repository.AuthContext, id int64) (json.RawMessage, error)
 
@@ -94,25 +91,6 @@ func handleGet(c *gin.Context, fn RepoFunc) {
 	}
 
 	c.Data(http.StatusOK, "application/json", result)
-}
-
-// handleGetFiltered: bind query → marshal to JSON → repo call → JSON response
-func handleGetFiltered[Q any](c *gin.Context, fn RepoFilterFunc) {
-	var query Q
-	if err := c.ShouldBindQuery(&query); err != nil {
-		commonHandlers.RespondError(c, http.StatusBadRequest, "invalid query parameters")
-		return
-	}
-
-	filter, err := json.Marshal(query)
-	if err != nil {
-		commonHandlers.RespondError(c, http.StatusInternalServerError, "failed to build filter")
-		return
-	}
-
-	handleGet(c, func(ctx context.Context, auth repository.AuthContext) (json.RawMessage, error) {
-		return fn(ctx, auth, filter)
-	})
 }
 
 // handleGetByID: auth → path param → repo call → null check → JSON response
