@@ -177,7 +177,7 @@ jobs:
       - name: Fix gosec SARIF output
         if: always()
         run: |
-          jq '(.runs[].tool.driver.rules // [])[] |= del(.relationships)' \
+          jq 'if .runs then .runs |= map(if .tool.driver.rules then .tool.driver.rules |= map(del(.relationships)) else . end) else . end' \
             gosec-results.sarif > gosec-results-fixed.sarif
           mv gosec-results-fixed.sarif gosec-results.sarif
 
