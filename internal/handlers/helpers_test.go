@@ -55,6 +55,7 @@ func TestGetAuthContext_Success(t *testing.T) {
 	c.Set("user_id", int64(42))
 	c.Set("username", "kaladin")
 	c.Request, _ = http.NewRequest("GET", "/", nil)
+	c.Request.RemoteAddr = "1.2.3.4:1234"
 	c.Request.Header.Set("User-Agent", "test-agent")
 
 	auth, err := GetAuthContext(c)
@@ -66,6 +67,9 @@ func TestGetAuthContext_Success(t *testing.T) {
 	}
 	if auth.Username != "kaladin" {
 		t.Errorf("Username = %q, want %q", auth.Username, "kaladin")
+	}
+	if auth.ClientIP != "1.2.3.4" {
+		t.Errorf("ClientIP = %q, want %q", auth.ClientIP, "1.2.3.4")
 	}
 	if auth.UserAgent != "test-agent" {
 		t.Errorf("UserAgent = %q, want %q", auth.UserAgent, "test-agent")
@@ -122,6 +126,11 @@ func TestGetAuthContext_WrongUsernameType(t *testing.T) {
 // HandlePgxError Tests
 // =============================================================================
 
+// errorResponse matches the JSON shape from commonHandlers.RespondError/LogAndRespondError.
+type errorResponse struct {
+	Error string `json:"error"`
+}
+
 func TestHandlePgxError_NoRows(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -131,21 +140,29 @@ func TestHandlePgxError_NoRows(t *testing.T) {
 	if w.Code != http.StatusNotFound {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
 	}
+	var resp errorResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to parse response: %v", err)
+	}
+	if resp.Error != "not found" {
+		t.Errorf("message = %q, want %q", resp.Error, "not found")
+	}
 }
 
 func TestHandlePgxError_PgCodes(t *testing.T) {
 	tests := []struct {
-		name   string
-		code   string
-		status int
+		name    string
+		code    string
+		status  int
+		message string
 	}{
-		{"unique_violation", "23505", http.StatusConflict},
-		{"foreign_key_violation", "23503", http.StatusBadRequest},
-		{"check_violation", "23514", http.StatusBadRequest},
-		{"no_data_found", "P0002", http.StatusNotFound},
-		{"insufficient_privilege", "42501", http.StatusForbidden},
-		{"invalid_parameter_value", "22023", http.StatusBadRequest},
-		{"raise_exception", "P0001", http.StatusBadRequest},
+		{"unique_violation", "23505", http.StatusConflict, "resource already exists"},
+		{"foreign_key_violation", "23503", http.StatusBadRequest, "referenced resource not found"},
+		{"check_violation", "23514", http.StatusBadRequest, "validation constraint failed"},
+		{"no_data_found", "P0002", http.StatusNotFound, "not found"},
+		{"insufficient_privilege", "42501", http.StatusForbidden, "access denied"},
+		{"invalid_parameter_value", "22023", http.StatusBadRequest, "invalid parameter value"},
+		{"raise_exception", "P0001", http.StatusBadRequest, "test error"},
 	}
 
 	for _, tt := range tests {
@@ -159,6 +176,13 @@ func TestHandlePgxError_PgCodes(t *testing.T) {
 
 			if w.Code != tt.status {
 				t.Errorf("status = %d, want %d", w.Code, tt.status)
+			}
+			var resp errorResponse
+			if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+				t.Fatalf("failed to parse response: %v", err)
+			}
+			if resp.Error != tt.message {
+				t.Errorf("message = %q, want %q", resp.Error, tt.message)
 			}
 		})
 	}
@@ -175,6 +199,13 @@ func TestHandlePgxError_UnknownPgCode(t *testing.T) {
 	if w.Code != http.StatusInternalServerError {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
 	}
+	var resp errorResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to parse response: %v", err)
+	}
+	if resp.Error != "internal server error" {
+		t.Errorf("message = %q, want %q", resp.Error, "internal server error")
+	}
 }
 
 func TestHandlePgxError_GenericError(t *testing.T) {
@@ -186,6 +217,13 @@ func TestHandlePgxError_GenericError(t *testing.T) {
 
 	if w.Code != http.StatusInternalServerError {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
+	}
+	var resp errorResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to parse response: %v", err)
+	}
+	if resp.Error != "internal server error" {
+		t.Errorf("message = %q, want %q", resp.Error, "internal server error")
 	}
 }
 
@@ -630,7 +668,10 @@ func TestGetPathParamInt64_Valid(t *testing.T) {
 		c.Status(http.StatusOK)
 	})
 
-	performRequest(t, router, "GET", "/items/42", nil)
+	w := performRequest(t, router, "GET", "/items/42", nil)
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+	}
 }
 
 func TestGetPathParamInt64_NonInteger(t *testing.T) {
@@ -643,5 +684,8 @@ func TestGetPathParamInt64_NonInteger(t *testing.T) {
 		c.Status(http.StatusBadRequest)
 	})
 
-	performRequest(t, router, "GET", "/items/abc", nil)
+	w := performRequest(t, router, "GET", "/items/abc", nil)
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
 }
