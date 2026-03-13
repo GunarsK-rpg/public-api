@@ -185,6 +185,11 @@ func handlePost(c *gin.Context, fn RepoUpsertFunc) {
 		return
 	}
 
+	if !json.Valid(body) {
+		commonHandlers.RespondError(c, http.StatusBadRequest, "invalid JSON")
+		return
+	}
+
 	result, err := fn(c.Request.Context(), auth, body)
 	if err != nil {
 		HandlePgxError(c, err)
