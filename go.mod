@@ -1,6 +1,6 @@
 module github.com/GunarsK-rpg/public-api
 
-go 1.26
+go 1.26.1
 
 require (
 	github.com/GunarsK-portfolio/portfolio-common v0.41.0
