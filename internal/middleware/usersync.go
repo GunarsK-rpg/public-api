@@ -21,12 +21,17 @@ func UserSync(pool *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 
-		// Sync user to RPG database
+		// Sync user to RPG database (empty display_name passed as NULL)
+		var displayName *string
+		if auth.DisplayName != "" {
+			displayName = &auth.DisplayName
+		}
 		_, err = pool.Exec(
 			c.Request.Context(),
-			"SELECT auth.sync_user($1, $2)",
+			"SELECT auth.sync_user($1, $2, $3)",
 			auth.UserID,
 			auth.Username,
+			displayName,
 		)
 		if err != nil {
 			slog.Error("failed to sync user",

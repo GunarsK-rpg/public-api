@@ -64,11 +64,15 @@ func GetAuthContext(c *gin.Context) (repository.AuthContext, error) {
 		return repository.AuthContext{}, ErrMissingAuthContext
 	}
 
+	displayName, _ := c.Get("display_name")
+	dname, _ := displayName.(string)
+
 	return repository.AuthContext{
-		UserID:    uid,
-		Username:  uname,
-		ClientIP:  c.ClientIP(),
-		UserAgent: c.GetHeader("User-Agent"),
+		UserID:      uid,
+		Username:    uname,
+		DisplayName: dname,
+		ClientIP:    c.ClientIP(),
+		UserAgent:   c.GetHeader("User-Agent"),
 	}, nil
 }
 

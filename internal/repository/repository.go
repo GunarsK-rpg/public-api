@@ -11,10 +11,11 @@ import (
 
 // AuthContext carries session identity for audit.set_context() calls.
 type AuthContext struct {
-	UserID    int64
-	Username  string
-	ClientIP  string
-	UserAgent string
+	UserID      int64
+	Username    string
+	DisplayName string
+	ClientIP    string
+	UserAgent   string
 }
 
 // Repository defines the interface for data access.
