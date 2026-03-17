@@ -96,6 +96,31 @@ func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, he
 		campaigns.POST("", commonMiddleware.RequirePermission(constants.ResourceCampaigns, commonMiddleware.LevelEdit), handler.CreateCampaign)
 		campaigns.PUT("/:id", commonMiddleware.RequirePermission(constants.ResourceCampaigns, commonMiddleware.LevelEdit), handler.UpdateCampaign)
 		campaigns.DELETE("/:id", commonMiddleware.RequirePermission(constants.ResourceCampaigns, commonMiddleware.LevelDelete), handler.DeleteCampaign)
+
+		// Combat NPC library
+		combatEdit := commonMiddleware.RequirePermission(constants.ResourceCampaigns, commonMiddleware.LevelEdit)
+		combatDelete := commonMiddleware.RequirePermission(constants.ResourceCampaigns, commonMiddleware.LevelDelete)
+
+		campaigns.GET("/:id/npcs", handler.GetNpcOptions)
+		campaigns.GET("/:id/npcs/:nid", handler.GetNpc)
+		campaigns.POST("/:id/npcs", combatEdit, handler.CreateNpc)
+		campaigns.PUT("/:id/npcs/:nid", combatEdit, handler.UpdateNpc)
+		campaigns.DELETE("/:id/npcs/:nid", combatDelete, handler.DeleteNpc)
+
+		// Combat encounters
+		campaigns.GET("/:id/combats", handler.GetCombats)
+		campaigns.GET("/:id/combats/:cid", handler.GetCombat)
+		campaigns.POST("/:id/combats", combatEdit, handler.CreateCombat)
+		campaigns.PUT("/:id/combats/:cid", combatEdit, handler.UpdateCombat)
+		campaigns.DELETE("/:id/combats/:cid", combatDelete, handler.DeleteCombat)
+
+		// Combat NPC instances
+		campaigns.POST("/:id/combats/:cid/npcs", combatEdit, handler.CreateCombatNpc)
+		campaigns.PATCH("/:id/combats/:cid/npcs/:iid", combatEdit, handler.UpdateCombatNpc)
+		campaigns.PATCH("/:id/combats/:cid/npcs/:iid/hp", combatEdit, handler.PatchCombatNpcHp)
+		campaigns.PATCH("/:id/combats/:cid/npcs/:iid/focus", combatEdit, handler.PatchCombatNpcFocus)
+		campaigns.PATCH("/:id/combats/:cid/npcs/:iid/investiture", combatEdit, handler.PatchCombatNpcInvestiture)
+		campaigns.DELETE("/:id/combats/:cid/npcs/:iid", combatDelete, handler.DeleteCombatNpc)
 	}
 }
 
