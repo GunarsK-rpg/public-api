@@ -28,6 +28,9 @@ type CombatRepository interface {
 	PatchCombatNpcHp(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 	PatchCombatNpcFocus(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 	PatchCombatNpcInvestiture(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
+
+	// Combat round management
+	EndCombatRound(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 }
 
 // NPCs
@@ -104,6 +107,12 @@ func (r *repository) PatchCombatNpcFocus(ctx context.Context, auth AuthContext, 
 
 func (r *repository) PatchCombatNpcInvestiture(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error) {
 	return r.callFunc(ctx, auth, "SELECT combat.patch_combat_npc_investiture($1::jsonb)", data)
+}
+
+// Combat round management
+
+func (r *repository) EndCombatRound(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error) {
+	return r.callFunc(ctx, auth, "SELECT combat.end_combat_round($1::jsonb)", data)
 }
 
 // extractInt64 pulls a required integer field from JSON data.

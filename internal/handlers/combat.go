@@ -230,6 +230,13 @@ func (h *Handler) DeleteCombatNpc(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
+// Combat round management
+
+// EndCombatRound ends the current round — increments counter, resets turn speeds.
+func (h *Handler) EndCombatRound(c *gin.Context) {
+	handlePost(c, h.repo.EndCombatRound)
+}
+
 // Combat NPC resource patches
 
 // PatchCombatNpcHp updates combat NPC current HP.
