@@ -24,6 +24,7 @@ type Repository interface {
 	ClassifierRepository
 	HeroRepository
 	CampaignRepository
+	CombatRepository
 }
 
 type repository struct {
