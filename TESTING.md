@@ -1,9 +1,5 @@
 # Testing Guide
 
-## Overview
-
-The template-api uses Go's standard `testing` package for unit tests.
-
 ## Quick Commands
 
 ```bash
@@ -14,125 +10,91 @@ task test
 go test -v ./...
 
 # Run with coverage
-go test -cover ./...
-
-# Generate coverage report
-go test -coverprofile=coverage.out ./...
-go tool cover -html=coverage.out -o coverage.html
+task test:coverage
 
 # Run specific test
-go test -v -run TestNewDatabaseConfig ./internal/config/
+go test -v -run TestGetAllClassifiers_CacheHit ./internal/handlers/
 
-# Run all config tests
-go test -v ./internal/config/
+# Run all tests in a package
+go test -v ./internal/handlers/
 ```
 
 ## Test Files
 
-**`internal/config/database_test.go`** - 8 tests
+**`internal/cache/cache_test.go`** - 3 tests
 
-- DSN formatting (2)
-- Environment loading (2)
-- Default values (1)
-- Required field validation (4) - panics on missing host/user/password/name
+- Cache miss returns nil (1)
+- Set then get returns value (1)
+- TTL expiry removes entry (1)
 
-**`internal/config/jwt_test.go`** - 5 tests
+**`internal/handlers/classifiers_test.go`** - 7 tests
 
-- Nil when secret not set (1)
-- Environment loading (1)
-- Default values (1)
-- Short secret validation (1)
-- HasJWT helper (3 sub-tests)
+- GetAllClassifiers cache hit (1)
+- GetAllClassifiers cache miss (1)
+- GetAllClassifiers second call hits cache (1)
+- GetAllClassifiers Redis fallback to DB (1)
+- Auth context extraction (4)
 
-**`internal/config/service_test.go`** - 5 tests
+**`internal/handlers/helpers_test.go`** - 43 tests
 
-- Environment loading (1)
-- Default values (1)
-- AllowedOrigins parsing (4 sub-tests)
-- Environment validation (3 valid + 1 invalid)
-
-**`internal/utils/env_test.go`** - 10 tests
-
-- GetEnv (3)
-- GetEnvRequired (2)
-- GetEnvSlice (4 sub-tests)
-- GetEnvInt (5 sub-tests)
-- GetEnvBool (6 sub-tests)
-- GetEnvDuration (6 sub-tests)
+- HandlePgxError: no rows, PG error codes, unknown code,
+  generic error (10)
+- HandleGet: success, no auth, repo error (3)
+- HandleGetByID: success, no auth, invalid ID,
+  null result, nil result, repo error (8)
+- HandleGetByString: success, no auth, null, error (4)
+- HandlePost: success, no auth, invalid JSON, error (6)
+- HandleDelete: success, no auth, invalid ID,
+  not found, repo error (5)
+- GetPathParamInt64: valid, non-integer (2)
 
 ## Key Testing Patterns
 
 **Table-driven tests**: Multiple scenarios with `tests := []struct{...}`
 
 ```go
-func TestGetEnvInt_TableDriven(t *testing.T) {
-    tests := []struct {
-        name         string
-        envValue     string
-        setEnv       bool
-        defaultValue int
-        want         int
-    }{
-        {
-            name:         "returns default when not set",
-            setEnv:       false,
-            defaultValue: 42,
-            want:         42,
-        },
-        // ... more cases
-    }
+tests := []struct {
+    name       string
+    paramValue string
+    wantCode   int
+}{
+    {"alphabetic", "abc", http.StatusBadRequest},
+    {"float", "1.5", http.StatusBadRequest},
+    {"special chars", "!@#", http.StatusBadRequest},
+}
 
-    for _, tt := range tests {
-        t.Run(tt.name, func(t *testing.T) {
-            // test logic
-        })
-    }
+for _, tt := range tests {
+    t.Run(tt.name, func(t *testing.T) {
+        // test logic
+    })
 }
 ```
 
-**Environment cleanup**: Use `t.Cleanup()` for automatic teardown
+**Gin test context**: HTTP handler tests use `httptest` with Gin
 
 ```go
-func setEnvForTest(t *testing.T, key, value string) {
-    t.Helper()
-    os.Setenv(key, value)
-    t.Cleanup(func() { os.Unsetenv(key) })
+w := httptest.NewRecorder()
+c, _ := gin.CreateTestContext(w)
+c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
+```
+
+**Mock repositories**: Interface-based mocks for database layer
+
+```go
+type mockRepo struct {
+    result json.RawMessage
+    err    error
 }
-```
 
-**Panic testing**: For validation that should panic
-
-```go
-func TestNewDatabaseConfig_PanicsOnMissingHost(t *testing.T) {
-    defer func() {
-        if r := recover(); r == nil {
-            t.Error("should panic when DB_HOST is missing")
-        }
-    }()
-
-    NewDatabaseConfig()
+func (m *mockRepo) GetAll(ctx context.Context) (json.RawMessage, error) {
+    return m.result, m.err
 }
-```
-
-**Section markers**: Organize tests by function
-
-```go
-// =============================================================================
-// NewDatabaseConfig Tests
-// =============================================================================
-```
-
-## Test Constants
-
-```go
-testJWTSecret = "this-is-a-very-long-secret-key-for-testing-at-least-32-chars"
 ```
 
 ## Contributing Tests
 
 1. Follow naming: `Test<FunctionName>_<Scenario>`
-2. Organize by function with section markers
-3. Use table-driven tests for multiple scenarios
-4. Use `t.Helper()` in test helper functions
-5. Clean up resources with `t.Cleanup()`
-6. Verify: `task ci:all` or `go test -cover ./...`
+2. Use table-driven tests for multiple scenarios
+3. Use `httptest.NewRecorder()` and `gin.CreateTestContext()` for handler tests
+4. Mock the repository interface, not the database
+5. Verify: `task ci:all`

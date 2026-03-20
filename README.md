@@ -18,15 +18,18 @@ RESTful API for Cosmere RPG with PostgreSQL stored functions (JSONB passthrough)
 
 ## Tech Stack
 
-- **Language**: Go 1.23
+- **Language**: Go 1.26
 - **Framework**: Gin
 - **Database**: PostgreSQL 17+ (pgx, stored functions)
-- **Common**: portfolio-common library (auth middleware, logging, metrics)
-- **Auth**: JWT validation via auth-service
+- **Common**: [portfolio-common][pc] (auth, logging, metrics)
+- **Auth**: JWT validation via [auth-service][as]
+
+[pc]: https://github.com/GunarsK-portfolio/portfolio-common
+[as]: https://github.com/GunarsK-portfolio/auth-service
 
 ## Prerequisites
 
-- Go 1.23+
+- Go 1.26+
 - Node.js 22+ and npm 11+
 - PostgreSQL with Cosmere RPG database schema
 - auth-service running
@@ -38,6 +41,7 @@ public-api/
 ├── cmd/
 │   └── api/              # Application entrypoint
 ├── internal/
+│   ├── cache/            # Redis + in-memory caching
 │   ├── config/           # Configuration
 │   ├── constants/        # Resource constants
 │   ├── database/         # pgx pool and health checker
@@ -141,10 +145,21 @@ go test ./...                               # Test
 | `LOG_FORMAT` | Log format (text/json) | `text` |
 | `MAX_BODY_SIZE` | Max request body size in bytes | `1048576` |
 
+## Testing
+
+```bash
+task test              # Run all tests
+task test:coverage     # Coverage report
+```
+
+See [TESTING.md](TESTING.md) for detailed testing documentation.
+
 ## Authentication
 
-This API validates JWT tokens issued by auth-service using the
-portfolio-common auth middleware. Tokens must include:
+This API validates JWT tokens issued by
+[auth-service][as] using the [portfolio-common][pc]
+auth middleware.
+Tokens must include:
 
 - `user_id`: User's numeric ID
 - `username`: User's display name
