@@ -21,8 +21,11 @@ RESTful API for Cosmere RPG with PostgreSQL stored functions (JSONB passthrough)
 - **Language**: Go 1.26
 - **Framework**: Gin
 - **Database**: PostgreSQL 17+ (pgx, stored functions)
-- **Common**: portfolio-common library (auth, logging, metrics)
-- **Auth**: JWT validation via auth-service
+- **Common**: [portfolio-common][pc] (auth, logging, metrics)
+- **Auth**: JWT validation via [auth-service][as]
+
+[pc]: https://github.com/GunarsK-portfolio/portfolio-common
+[as]: https://github.com/GunarsK-portfolio/auth-service
 
 ## Prerequisites
 
@@ -153,8 +156,9 @@ See [TESTING.md](TESTING.md) for detailed testing documentation.
 
 ## Authentication
 
-This API validates JWT tokens issued by auth-service
-using the portfolio-common auth middleware.
+This API validates JWT tokens issued by
+[auth-service][as] using the [portfolio-common][pc]
+auth middleware.
 Tokens must include:
 
 - `user_id`: User's numeric ID
