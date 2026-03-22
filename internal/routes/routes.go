@@ -96,6 +96,7 @@ func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, he
 		campaigns.POST("", commonMiddleware.RequirePermission(constants.ResourceCampaigns, commonMiddleware.LevelEdit), handler.CreateCampaign)
 		campaigns.PUT("/:id", commonMiddleware.RequirePermission(constants.ResourceCampaigns, commonMiddleware.LevelEdit), handler.UpdateCampaign)
 		campaigns.DELETE("/:id", commonMiddleware.RequirePermission(constants.ResourceCampaigns, commonMiddleware.LevelDelete), handler.DeleteCampaign)
+		campaigns.DELETE("/:id/heroes/:hid", commonMiddleware.RequirePermission(constants.ResourceCampaigns, commonMiddleware.LevelDelete), handler.RemoveHeroFromCampaign)
 
 		// Combat NPC library
 		combatEdit := commonMiddleware.RequirePermission(constants.ResourceCampaigns, commonMiddleware.LevelEdit)

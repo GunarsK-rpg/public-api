@@ -12,6 +12,7 @@ type CampaignRepository interface {
 	GetCampaignByCode(ctx context.Context, auth AuthContext, code string) (json.RawMessage, error)
 	UpsertCampaign(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 	DeleteCampaign(ctx context.Context, auth AuthContext, id int64) (bool, error)
+	RemoveHeroFromCampaign(ctx context.Context, auth AuthContext, heroID int64, campaignID int64) (bool, error)
 }
 
 func (r *repository) GetCampaigns(ctx context.Context, auth AuthContext) (json.RawMessage, error) {
@@ -32,4 +33,8 @@ func (r *repository) UpsertCampaign(ctx context.Context, auth AuthContext, data 
 
 func (r *repository) DeleteCampaign(ctx context.Context, auth AuthContext, id int64) (bool, error) {
 	return r.execFunc(ctx, auth, "SELECT campaign.delete_campaign($1)", id)
+}
+
+func (r *repository) RemoveHeroFromCampaign(ctx context.Context, auth AuthContext, heroID int64, campaignID int64) (bool, error) {
+	return r.execFunc(ctx, auth, "SELECT campaign.remove_hero_from_campaign($1, $2)", heroID, campaignID)
 }
