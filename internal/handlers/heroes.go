@@ -286,6 +286,26 @@ func (h *Handler) DeleteHeroCompanion(c *gin.Context) {
 	handleDelete(c, "subId", h.repo.DeleteHeroCompanion)
 }
 
+// GetCompanionNpcOptions returns companion-eligible NPCs for the add companion picker.
+func (h *Handler) GetCompanionNpcOptions(c *gin.Context) {
+	handleGetByID(c, "id", h.repo.GetCompanionNpcOptions)
+}
+
+// PatchCompanionHp updates companion current HP.
+func (h *Handler) PatchCompanionHp(c *gin.Context) {
+	handlePost(c, h.repo.PatchCompanionHp)
+}
+
+// PatchCompanionFocus updates companion current focus.
+func (h *Handler) PatchCompanionFocus(c *gin.Context) {
+	handlePost(c, h.repo.PatchCompanionFocus)
+}
+
+// PatchCompanionInvestiture updates companion current investiture.
+func (h *Handler) PatchCompanionInvestiture(c *gin.Context) {
+	handlePost(c, h.repo.PatchCompanionInvestiture)
+}
+
 // Notes
 
 // GetHeroNotes returns all notes for a hero.
