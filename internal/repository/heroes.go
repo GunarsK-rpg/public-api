@@ -29,7 +29,7 @@ type HeroRepository interface {
 	GetHeroGoals(ctx context.Context, auth AuthContext, heroID int64) (json.RawMessage, error)
 	GetHeroConnections(ctx context.Context, auth AuthContext, heroID int64) (json.RawMessage, error)
 	GetHeroCompanions(ctx context.Context, auth AuthContext, heroID int64) (json.RawMessage, error)
-	GetCompanionNpcOptions(ctx context.Context, auth AuthContext, campaignID int64) (json.RawMessage, error)
+	GetCompanionNpcOptions(ctx context.Context, auth AuthContext, campaignID *int64, heroID int64) (json.RawMessage, error)
 	GetHeroNotes(ctx context.Context, auth AuthContext, heroID int64) (json.RawMessage, error)
 	GetHeroCultures(ctx context.Context, auth AuthContext, heroID int64) (json.RawMessage, error)
 
@@ -161,8 +161,8 @@ func (r *repository) GetHeroCompanions(ctx context.Context, auth AuthContext, he
 	return r.callFunc(ctx, auth, "SELECT heroes.get_hero_companions($1)", heroID)
 }
 
-func (r *repository) GetCompanionNpcOptions(ctx context.Context, auth AuthContext, campaignID int64) (json.RawMessage, error) {
-	return r.callFunc(ctx, auth, "SELECT heroes.get_companion_npc_options($1)", campaignID)
+func (r *repository) GetCompanionNpcOptions(ctx context.Context, auth AuthContext, campaignID *int64, heroID int64) (json.RawMessage, error) {
+	return r.callFunc(ctx, auth, "SELECT heroes.get_companion_npc_options($1, $2)", campaignID, heroID)
 }
 
 func (r *repository) GetHeroNotes(ctx context.Context, auth AuthContext, heroID int64) (json.RawMessage, error) {
