@@ -27,7 +27,7 @@ func (h *Handler) SetHeroAvatar(c *gin.Context) {
 
 	var req setAvatarRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		commonHandlers.RespondError(c, http.StatusBadRequest, "avatarKey is required")
+		commonHandlers.RespondError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
