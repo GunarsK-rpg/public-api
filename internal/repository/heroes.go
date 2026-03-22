@@ -29,6 +29,7 @@ type HeroRepository interface {
 	GetHeroGoals(ctx context.Context, auth AuthContext, heroID int64) (json.RawMessage, error)
 	GetHeroConnections(ctx context.Context, auth AuthContext, heroID int64) (json.RawMessage, error)
 	GetHeroCompanions(ctx context.Context, auth AuthContext, heroID int64) (json.RawMessage, error)
+	GetHeroNotes(ctx context.Context, auth AuthContext, heroID int64) (json.RawMessage, error)
 	GetHeroCultures(ctx context.Context, auth AuthContext, heroID int64) (json.RawMessage, error)
 
 	// Sub-resource upserts (13)
@@ -44,6 +45,7 @@ type HeroRepository interface {
 	UpsertHeroGoal(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 	UpsertHeroConnection(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 	UpsertHeroCompanion(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
+	UpsertHeroNote(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 	UpsertHeroCulture(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 
 	// Resource patches
@@ -77,6 +79,7 @@ type HeroRepository interface {
 	DeleteHeroGoal(ctx context.Context, auth AuthContext, id int64) (bool, error)
 	DeleteHeroConnection(ctx context.Context, auth AuthContext, id int64) (bool, error)
 	DeleteHeroCompanion(ctx context.Context, auth AuthContext, id int64) (bool, error)
+	DeleteHeroNote(ctx context.Context, auth AuthContext, id int64) (bool, error)
 	DeleteHeroCulture(ctx context.Context, auth AuthContext, id int64) (bool, error)
 }
 
@@ -152,6 +155,10 @@ func (r *repository) GetHeroCompanions(ctx context.Context, auth AuthContext, he
 	return r.callFunc(ctx, auth, "SELECT heroes.get_hero_companions($1)", heroID)
 }
 
+func (r *repository) GetHeroNotes(ctx context.Context, auth AuthContext, heroID int64) (json.RawMessage, error) {
+	return r.callFunc(ctx, auth, "SELECT heroes.get_hero_notes($1)", heroID)
+}
+
 func (r *repository) GetHeroCultures(ctx context.Context, auth AuthContext, heroID int64) (json.RawMessage, error) {
 	return r.callFunc(ctx, auth, "SELECT heroes.get_hero_cultures($1)", heroID)
 }
@@ -204,6 +211,10 @@ func (r *repository) UpsertHeroConnection(ctx context.Context, auth AuthContext,
 
 func (r *repository) UpsertHeroCompanion(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error) {
 	return r.callFunc(ctx, auth, "SELECT heroes.upsert_hero_companion($1::jsonb)", data)
+}
+
+func (r *repository) UpsertHeroNote(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error) {
+	return r.callFunc(ctx, auth, "SELECT heroes.upsert_hero_note($1::jsonb)", data)
 }
 
 func (r *repository) UpsertHeroCulture(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error) {
@@ -296,6 +307,10 @@ func (r *repository) DeleteHeroConnection(ctx context.Context, auth AuthContext,
 
 func (r *repository) DeleteHeroCompanion(ctx context.Context, auth AuthContext, id int64) (bool, error) {
 	return r.execFunc(ctx, auth, "SELECT heroes.delete_hero_companion($1)", id)
+}
+
+func (r *repository) DeleteHeroNote(ctx context.Context, auth AuthContext, id int64) (bool, error) {
+	return r.execFunc(ctx, auth, "SELECT heroes.delete_hero_note($1)", id)
 }
 
 func (r *repository) DeleteHeroCulture(ctx context.Context, auth AuthContext, id int64) (bool, error) {
