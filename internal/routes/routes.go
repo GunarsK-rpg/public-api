@@ -69,6 +69,9 @@ func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, he
 		registerHeroSubResource(heroes, "goals", handler.GetHeroGoals, handler.UpsertHeroGoal, handler.DeleteHeroGoal)
 		registerHeroSubResource(heroes, "connections", handler.GetHeroConnections, handler.UpsertHeroConnection, handler.DeleteHeroConnection)
 		registerHeroSubResource(heroes, "companions", handler.GetHeroCompanions, handler.UpsertHeroCompanion, handler.DeleteHeroCompanion)
+		heroes.PATCH("/:id/companions/:subId/hp", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelEdit), handler.PatchCompanionHp)
+		heroes.PATCH("/:id/companions/:subId/focus", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelEdit), handler.PatchCompanionFocus)
+		heroes.PATCH("/:id/companions/:subId/investiture", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelEdit), handler.PatchCompanionInvestiture)
 		registerHeroSubResource(heroes, "notes", handler.GetHeroNotes, handler.UpsertHeroNote, handler.DeleteHeroNote)
 		registerHeroSubResource(heroes, "cultures", handler.GetHeroCultures, handler.UpsertHeroCulture, handler.DeleteHeroCulture)
 
@@ -107,6 +110,7 @@ func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, he
 		combatEdit := commonMiddleware.RequirePermission(constants.ResourceCampaigns, commonMiddleware.LevelEdit)
 		combatDelete := commonMiddleware.RequirePermission(constants.ResourceCampaigns, commonMiddleware.LevelDelete)
 
+		campaigns.GET("/:id/companion-npcs", handler.GetCompanionNpcOptions)
 		campaigns.GET("/:id/npcs", handler.GetNpcOptions)
 		campaigns.GET("/:id/npcs/:nid", handler.GetNpc)
 		campaigns.POST("/:id/npcs", combatEdit, handler.CreateNpc)
