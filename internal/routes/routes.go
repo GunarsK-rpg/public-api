@@ -79,6 +79,10 @@ func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, he
 		heroes.POST("/:id/favorites", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelEdit), handler.AddFavoriteAction)
 		heroes.DELETE("/:id/favorites/:subId", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelDelete), handler.RemoveFavoriteAction)
 
+		// Avatar
+		heroes.POST("/:id/avatar", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelEdit), handler.SetHeroAvatar)
+		heroes.DELETE("/:id/avatar", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelDelete), handler.DeleteHeroAvatar)
+
 		// Resource patch routes
 		heroes.PATCH("/:id/health", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelEdit), handler.PatchHeroHealth)
 		heroes.PATCH("/:id/focus", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelEdit), handler.PatchHeroFocus)
