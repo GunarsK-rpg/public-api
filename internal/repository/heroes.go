@@ -3,6 +3,8 @@ package repository
 import (
 	"context"
 	"encoding/json"
+
+	"github.com/jackc/pgx/v5"
 )
 
 // HeroRepository defines methods for hero data access.
@@ -57,6 +59,10 @@ type HeroRepository interface {
 	// Favorite action management
 	AddFavoriteAction(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 	RemoveFavoriteAction(ctx context.Context, auth AuthContext, id int64) (bool, error)
+
+	// Avatar
+	UpsertHeroAvatar(ctx context.Context, auth AuthContext, heroID int64, avatarKey string) error
+	DeleteHeroAvatar(ctx context.Context, auth AuthContext, heroID int64) error
 
 	// Sub-resource deletes (13)
 	DeleteHeroAttribute(ctx context.Context, auth AuthContext, id int64) (bool, error)
@@ -294,4 +300,20 @@ func (r *repository) DeleteHeroCompanion(ctx context.Context, auth AuthContext, 
 
 func (r *repository) DeleteHeroCulture(ctx context.Context, auth AuthContext, id int64) (bool, error) {
 	return r.execFunc(ctx, auth, "SELECT heroes.delete_hero_culture($1)", id)
+}
+
+// Avatar
+
+func (r *repository) UpsertHeroAvatar(ctx context.Context, auth AuthContext, heroID int64, avatarKey string) error {
+	return r.withAuditTx(ctx, auth, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, "SELECT heroes.upsert_hero_avatar($1, $2)", heroID, avatarKey)
+		return err
+	})
+}
+
+func (r *repository) DeleteHeroAvatar(ctx context.Context, auth AuthContext, heroID int64) error {
+	return r.withAuditTx(ctx, auth, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, "SELECT heroes.delete_hero_avatar($1)", heroID)
+		return err
+	})
 }
