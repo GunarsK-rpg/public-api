@@ -69,6 +69,7 @@ func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, he
 		registerHeroSubResource(heroes, "goals", handler.GetHeroGoals, handler.UpsertHeroGoal, handler.DeleteHeroGoal)
 		registerHeroSubResource(heroes, "connections", handler.GetHeroConnections, handler.UpsertHeroConnection, handler.DeleteHeroConnection)
 		registerHeroSubResource(heroes, "companions", handler.GetHeroCompanions, handler.UpsertHeroCompanion, handler.DeleteHeroCompanion)
+		registerHeroSubResource(heroes, "notes", handler.GetHeroNotes, handler.UpsertHeroNote, handler.DeleteHeroNote)
 		registerHeroSubResource(heroes, "cultures", handler.GetHeroCultures, handler.UpsertHeroCulture, handler.DeleteHeroCulture)
 
 		// Equipment modification management

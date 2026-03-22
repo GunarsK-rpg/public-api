@@ -286,6 +286,23 @@ func (h *Handler) DeleteHeroCompanion(c *gin.Context) {
 	handleDelete(c, "subId", h.repo.DeleteHeroCompanion)
 }
 
+// Notes
+
+// GetHeroNotes returns all notes for a hero.
+func (h *Handler) GetHeroNotes(c *gin.Context) {
+	handleGetByID(c, "id", h.repo.GetHeroNotes)
+}
+
+// UpsertHeroNote creates or updates a hero note.
+func (h *Handler) UpsertHeroNote(c *gin.Context) {
+	handlePost(c, h.repo.UpsertHeroNote)
+}
+
+// DeleteHeroNote deletes a hero note.
+func (h *Handler) DeleteHeroNote(c *gin.Context) {
+	handleDelete(c, "subId", h.repo.DeleteHeroNote)
+}
+
 // Cultures
 
 // GetHeroCultures returns all cultures for a hero.
