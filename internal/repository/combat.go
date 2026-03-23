@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
+	"github.com/jackc/pgx/v5"
 )
 
 // CombatRepository defines methods for combat data access.
@@ -15,6 +17,8 @@ type CombatRepository interface {
 	GetNpcById(ctx context.Context, auth AuthContext, id int64) (json.RawMessage, error)
 	UpsertNpc(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 	DeleteNpc(ctx context.Context, auth AuthContext, id int64, campaignID int64) (bool, error)
+	UpsertNpcAvatar(ctx context.Context, auth AuthContext, npcID int64, campaignID int64, avatarKey string) error
+	DeleteNpcAvatar(ctx context.Context, auth AuthContext, npcID int64, campaignID int64) error
 
 	// Combats
 	GetCombats(ctx context.Context, auth AuthContext, campaignID int64) (json.RawMessage, error)
@@ -64,6 +68,20 @@ func (r *repository) UpsertNpc(ctx context.Context, auth AuthContext, data json.
 
 func (r *repository) DeleteNpc(ctx context.Context, auth AuthContext, id int64, campaignID int64) (bool, error) {
 	return r.execFunc(ctx, auth, "SELECT combat.delete_npc($1, $2)", id, campaignID)
+}
+
+func (r *repository) UpsertNpcAvatar(ctx context.Context, auth AuthContext, npcID int64, campaignID int64, avatarKey string) error {
+	return r.withAuditTx(ctx, auth, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, "SELECT combat.upsert_npc_avatar($1, $2, $3)", npcID, campaignID, avatarKey)
+		return err
+	})
+}
+
+func (r *repository) DeleteNpcAvatar(ctx context.Context, auth AuthContext, npcID int64, campaignID int64) error {
+	return r.withAuditTx(ctx, auth, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, "SELECT combat.delete_npc_avatar($1, $2)", npcID, campaignID)
+		return err
+	})
 }
 
 // Combats
