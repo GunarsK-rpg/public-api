@@ -15,6 +15,11 @@ func (h *Handler) GetNpcOptions(c *gin.Context) {
 	handleGetByID(c, "id", h.repo.GetNpcOptions)
 }
 
+// GetNpcLibrary returns all campaign NPCs including archived for library management.
+func (h *Handler) GetNpcLibrary(c *gin.Context) {
+	handleGetByID(c, "id", h.repo.GetNpcLibrary)
+}
+
 // GetNpc returns a full NPC stat block.
 func (h *Handler) GetNpc(c *gin.Context) {
 	auth, err := GetAuthContext(c)

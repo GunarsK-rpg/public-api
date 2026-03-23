@@ -10,6 +10,7 @@ import (
 type CombatRepository interface {
 	// NPCs (templates)
 	GetNpcOptions(ctx context.Context, auth AuthContext, campaignID int64) (json.RawMessage, error)
+	GetNpcLibrary(ctx context.Context, auth AuthContext, campaignID int64) (json.RawMessage, error)
 	GetNpc(ctx context.Context, auth AuthContext, id int64, campaignID int64) (json.RawMessage, error)
 	GetNpcById(ctx context.Context, auth AuthContext, id int64) (json.RawMessage, error)
 	UpsertNpc(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
@@ -39,6 +40,10 @@ type CombatRepository interface {
 
 func (r *repository) GetNpcOptions(ctx context.Context, auth AuthContext, campaignID int64) (json.RawMessage, error) {
 	return r.callFunc(ctx, auth, "SELECT combat.get_npc_options($1)", campaignID)
+}
+
+func (r *repository) GetNpcLibrary(ctx context.Context, auth AuthContext, campaignID int64) (json.RawMessage, error) {
+	return r.callFunc(ctx, auth, "SELECT combat.get_npc_library($1)", campaignID)
 }
 
 func (r *repository) GetNpc(ctx context.Context, auth AuthContext, id int64, campaignID int64) (json.RawMessage, error) {
