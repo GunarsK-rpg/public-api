@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 
@@ -268,75 +267,6 @@ func (h *Handler) UpsertHeroConnection(c *gin.Context) {
 // DeleteHeroConnection deletes a hero connection.
 func (h *Handler) DeleteHeroConnection(c *gin.Context) {
 	handleDelete(c, "subId", h.repo.DeleteHeroConnection)
-}
-
-// Companions
-
-// GetHeroCompanions returns all companions for a hero.
-func (h *Handler) GetHeroCompanions(c *gin.Context) {
-	handleGetByID(c, "id", h.repo.GetHeroCompanions)
-}
-
-// UpsertHeroCompanion creates or updates a hero companion.
-func (h *Handler) UpsertHeroCompanion(c *gin.Context) {
-	handlePost(c, h.repo.UpsertHeroCompanion)
-}
-
-// DeleteHeroCompanion deletes a hero companion.
-func (h *Handler) DeleteHeroCompanion(c *gin.Context) {
-	handleDelete(c, "subId", h.repo.DeleteHeroCompanion)
-}
-
-// GetCompanionNpcOptions returns companion-eligible NPCs for the add companion picker.
-func (h *Handler) GetCompanionNpcOptions(c *gin.Context) {
-	auth, err := GetAuthContext(c)
-	if err != nil {
-		commonHandlers.RespondError(c, http.StatusUnauthorized, "unauthorized")
-		return
-	}
-
-	heroID, err := getPathParamInt64(c, "id")
-	if err != nil {
-		commonHandlers.RespondError(c, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	// Get campaignId from query param (optional — hero may not be in a campaign)
-	var campaignID *int64
-	if cid := c.Query("campaignId"); cid != "" {
-		parsed, parseErr := strconv.ParseInt(cid, 10, 64)
-		if parseErr == nil && parsed > 0 {
-			campaignID = &parsed
-		}
-	}
-
-	result, err := h.repo.GetCompanionNpcOptions(c.Request.Context(), auth, campaignID, heroID)
-	if err != nil {
-		HandlePgxError(c, err)
-		return
-	}
-
-	if result == nil || string(result) == "null" {
-		c.Data(http.StatusOK, "application/json", []byte("[]"))
-		return
-	}
-
-	c.Data(http.StatusOK, "application/json", result)
-}
-
-// PatchCompanionHp updates companion current HP.
-func (h *Handler) PatchCompanionHp(c *gin.Context) {
-	handlePost(c, h.repo.PatchCompanionHp)
-}
-
-// PatchCompanionFocus updates companion current focus.
-func (h *Handler) PatchCompanionFocus(c *gin.Context) {
-	handlePost(c, h.repo.PatchCompanionFocus)
-}
-
-// PatchCompanionInvestiture updates companion current investiture.
-func (h *Handler) PatchCompanionInvestiture(c *gin.Context) {
-	handlePost(c, h.repo.PatchCompanionInvestiture)
 }
 
 // Notes

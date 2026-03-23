@@ -28,8 +28,6 @@ type HeroRepository interface {
 	GetHeroInjuries(ctx context.Context, auth AuthContext, heroID int64) (json.RawMessage, error)
 	GetHeroGoals(ctx context.Context, auth AuthContext, heroID int64) (json.RawMessage, error)
 	GetHeroConnections(ctx context.Context, auth AuthContext, heroID int64) (json.RawMessage, error)
-	GetHeroCompanions(ctx context.Context, auth AuthContext, heroID int64) (json.RawMessage, error)
-	GetCompanionNpcOptions(ctx context.Context, auth AuthContext, campaignID *int64, heroID int64) (json.RawMessage, error)
 	GetHeroNotes(ctx context.Context, auth AuthContext, heroID int64) (json.RawMessage, error)
 	GetHeroCultures(ctx context.Context, auth AuthContext, heroID int64) (json.RawMessage, error)
 
@@ -45,7 +43,6 @@ type HeroRepository interface {
 	UpsertHeroInjury(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 	UpsertHeroGoal(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 	UpsertHeroConnection(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
-	UpsertHeroCompanion(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 	UpsertHeroNote(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 	UpsertHeroCulture(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 
@@ -54,11 +51,6 @@ type HeroRepository interface {
 	PatchHeroFocus(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 	PatchHeroInvestiture(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 	PatchHeroCurrency(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
-
-	// Companion resource patches
-	PatchCompanionHp(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
-	PatchCompanionFocus(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
-	PatchCompanionInvestiture(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 
 	// Equipment modification management
 	AddEquipmentModification(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
@@ -84,7 +76,6 @@ type HeroRepository interface {
 	DeleteHeroInjury(ctx context.Context, auth AuthContext, id int64) (bool, error)
 	DeleteHeroGoal(ctx context.Context, auth AuthContext, id int64) (bool, error)
 	DeleteHeroConnection(ctx context.Context, auth AuthContext, id int64) (bool, error)
-	DeleteHeroCompanion(ctx context.Context, auth AuthContext, id int64) (bool, error)
 	DeleteHeroNote(ctx context.Context, auth AuthContext, id int64) (bool, error)
 	DeleteHeroCulture(ctx context.Context, auth AuthContext, id int64) (bool, error)
 }
@@ -157,14 +148,6 @@ func (r *repository) GetHeroConnections(ctx context.Context, auth AuthContext, h
 	return r.callFunc(ctx, auth, "SELECT heroes.get_hero_connections($1)", heroID)
 }
 
-func (r *repository) GetHeroCompanions(ctx context.Context, auth AuthContext, heroID int64) (json.RawMessage, error) {
-	return r.callFunc(ctx, auth, "SELECT heroes.get_hero_companions($1)", heroID)
-}
-
-func (r *repository) GetCompanionNpcOptions(ctx context.Context, auth AuthContext, campaignID *int64, heroID int64) (json.RawMessage, error) {
-	return r.callFunc(ctx, auth, "SELECT heroes.get_companion_npc_options($1, $2)", campaignID, heroID)
-}
-
 func (r *repository) GetHeroNotes(ctx context.Context, auth AuthContext, heroID int64) (json.RawMessage, error) {
 	return r.callFunc(ctx, auth, "SELECT heroes.get_hero_notes($1)", heroID)
 }
@@ -219,10 +202,6 @@ func (r *repository) UpsertHeroConnection(ctx context.Context, auth AuthContext,
 	return r.callFunc(ctx, auth, "SELECT heroes.upsert_hero_connection($1::jsonb)", data)
 }
 
-func (r *repository) UpsertHeroCompanion(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error) {
-	return r.callFunc(ctx, auth, "SELECT heroes.upsert_hero_companion($1::jsonb)", data)
-}
-
 func (r *repository) UpsertHeroNote(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error) {
 	return r.callFunc(ctx, auth, "SELECT heroes.upsert_hero_note($1::jsonb)", data)
 }
@@ -247,20 +226,6 @@ func (r *repository) PatchHeroInvestiture(ctx context.Context, auth AuthContext,
 
 func (r *repository) PatchHeroCurrency(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error) {
 	return r.callFunc(ctx, auth, "SELECT heroes.patch_hero_currency($1::jsonb)", data)
-}
-
-// Companion resource patches
-
-func (r *repository) PatchCompanionHp(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error) {
-	return r.callFunc(ctx, auth, "SELECT heroes.patch_hero_companion_hp($1::jsonb)", data)
-}
-
-func (r *repository) PatchCompanionFocus(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error) {
-	return r.callFunc(ctx, auth, "SELECT heroes.patch_hero_companion_focus($1::jsonb)", data)
-}
-
-func (r *repository) PatchCompanionInvestiture(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error) {
-	return r.callFunc(ctx, auth, "SELECT heroes.patch_hero_companion_investiture($1::jsonb)", data)
 }
 
 // Equipment modification management
@@ -327,10 +292,6 @@ func (r *repository) DeleteHeroGoal(ctx context.Context, auth AuthContext, id in
 
 func (r *repository) DeleteHeroConnection(ctx context.Context, auth AuthContext, id int64) (bool, error) {
 	return r.execFunc(ctx, auth, "SELECT heroes.delete_hero_connection($1)", id)
-}
-
-func (r *repository) DeleteHeroCompanion(ctx context.Context, auth AuthContext, id int64) (bool, error) {
-	return r.execFunc(ctx, auth, "SELECT heroes.delete_hero_companion($1)", id)
 }
 
 func (r *repository) DeleteHeroNote(ctx context.Context, auth AuthContext, id int64) (bool, error) {

@@ -68,13 +68,12 @@ func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, he
 		registerHeroSubResource(heroes, "injuries", handler.GetHeroInjuries, handler.UpsertHeroInjury, handler.DeleteHeroInjury)
 		registerHeroSubResource(heroes, "goals", handler.GetHeroGoals, handler.UpsertHeroGoal, handler.DeleteHeroGoal)
 		registerHeroSubResource(heroes, "connections", handler.GetHeroConnections, handler.UpsertHeroConnection, handler.DeleteHeroConnection)
-		registerHeroSubResource(heroes, "companions", handler.GetHeroCompanions, handler.UpsertHeroCompanion, handler.DeleteHeroCompanion)
-		heroes.GET("/:id/companion-npcs", handler.GetCompanionNpcOptions)
-		heroes.PATCH("/:id/companions/:subId/hp", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelEdit), handler.PatchCompanionHp)
-		heroes.PATCH("/:id/companions/:subId/focus", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelEdit), handler.PatchCompanionFocus)
-		heroes.PATCH("/:id/companions/:subId/investiture", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelEdit), handler.PatchCompanionInvestiture)
 		registerHeroSubResource(heroes, "notes", handler.GetHeroNotes, handler.UpsertHeroNote, handler.DeleteHeroNote)
 		registerHeroSubResource(heroes, "cultures", handler.GetHeroCultures, handler.UpsertHeroCulture, handler.DeleteHeroCulture)
+
+		// Companion queries (read-only, instances managed via /npc-instances)
+		heroes.GET("/:id/companions", handler.GetHeroCompanions)
+		heroes.GET("/:id/companion-npcs", handler.GetCompanionNpcOptions)
 
 		// Equipment modification management
 		heroes.POST("/:id/equipment/:subId/modifications", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelEdit), handler.AddEquipmentModification)
@@ -107,11 +106,10 @@ func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, he
 		campaigns.DELETE("/:id", commonMiddleware.RequirePermission(constants.ResourceCampaigns, commonMiddleware.LevelDelete), handler.DeleteCampaign)
 		campaigns.DELETE("/:id/heroes/:hid", commonMiddleware.RequirePermission(constants.ResourceCampaigns, commonMiddleware.LevelDelete), handler.RemoveHeroFromCampaign)
 
-		// Combat NPC library
+		// NPC template library
 		combatEdit := commonMiddleware.RequirePermission(constants.ResourceCampaigns, commonMiddleware.LevelEdit)
 		combatDelete := commonMiddleware.RequirePermission(constants.ResourceCampaigns, commonMiddleware.LevelDelete)
 
-		// companion-npcs moved to heroes group
 		campaigns.GET("/:id/npcs", handler.GetNpcOptions)
 		campaigns.GET("/:id/npcs/:nid", handler.GetNpc)
 		campaigns.POST("/:id/npcs", combatEdit, handler.CreateNpc)
@@ -125,14 +123,15 @@ func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, he
 		campaigns.PUT("/:id/combats/:cid", combatEdit, handler.UpdateCombat)
 		campaigns.DELETE("/:id/combats/:cid", combatDelete, handler.DeleteCombat)
 		campaigns.POST("/:id/combats/:cid/end-round", combatEdit, handler.EndCombatRound)
+	}
 
-		// Combat NPC instances
-		campaigns.POST("/:id/combats/:cid/npcs", combatEdit, handler.CreateCombatNpc)
-		campaigns.PATCH("/:id/combats/:cid/npcs/:iid", combatEdit, handler.UpdateCombatNpc)
-		campaigns.PATCH("/:id/combats/:cid/npcs/:iid/hp", combatEdit, handler.PatchCombatNpcHp)
-		campaigns.PATCH("/:id/combats/:cid/npcs/:iid/focus", combatEdit, handler.PatchCombatNpcFocus)
-		campaigns.PATCH("/:id/combats/:cid/npcs/:iid/investiture", combatEdit, handler.PatchCombatNpcInvestiture)
-		campaigns.DELETE("/:id/combats/:cid/npcs/:iid", combatDelete, handler.DeleteCombatNpc)
+	// NPC instances (combat + companion — auth handled at DB level)
+	instances := v1.Group("/npc-instances")
+	instances.Use(commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelRead))
+	{
+		instances.POST("", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelEdit), handler.CreateNpcInstance)
+		instances.PATCH("/:id", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelEdit), handler.PatchNpcInstance)
+		instances.DELETE("/:id", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelDelete), handler.DeleteNpcInstance)
 	}
 }
 

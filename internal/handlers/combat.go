@@ -8,7 +8,7 @@ import (
 	commonHandlers "github.com/GunarsK-portfolio/portfolio-common/handlers"
 )
 
-// NPCs
+// NPCs (templates)
 
 // GetNpcOptions returns lightweight NPC list for picker.
 func (h *Handler) GetNpcOptions(c *gin.Context) {
@@ -178,58 +178,6 @@ func (h *Handler) DeleteCombat(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// Combat NPC instances
-
-// CreateCombatNpc adds an NPC instance to a combat.
-func (h *Handler) CreateCombatNpc(c *gin.Context) {
-	handlePost(c, h.repo.UpsertCombatNpc)
-}
-
-// UpdateCombatNpc updates a combat NPC instance.
-func (h *Handler) UpdateCombatNpc(c *gin.Context) {
-	handlePost(c, h.repo.UpsertCombatNpc)
-}
-
-// DeleteCombatNpc removes an NPC instance from a combat.
-func (h *Handler) DeleteCombatNpc(c *gin.Context) {
-	auth, err := GetAuthContext(c)
-	if err != nil {
-		commonHandlers.RespondError(c, http.StatusUnauthorized, "unauthorized")
-		return
-	}
-
-	instanceID, err := getPathParamInt64(c, "iid")
-	if err != nil {
-		commonHandlers.RespondError(c, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	combatID, err := getPathParamInt64(c, "cid")
-	if err != nil {
-		commonHandlers.RespondError(c, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	campaignID, err := getPathParamInt64(c, "id")
-	if err != nil {
-		commonHandlers.RespondError(c, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	deleted, err := h.repo.DeleteCombatNpc(c.Request.Context(), auth, instanceID, combatID, campaignID)
-	if err != nil {
-		HandlePgxError(c, err)
-		return
-	}
-
-	if !deleted {
-		commonHandlers.RespondError(c, http.StatusNotFound, "not found")
-		return
-	}
-
-	c.Status(http.StatusNoContent)
-}
-
 // Combat round management
 
 // EndCombatRound ends the current round — increments counter, resets turn speeds.
@@ -237,19 +185,29 @@ func (h *Handler) EndCombatRound(c *gin.Context) {
 	handlePost(c, h.repo.EndCombatRound)
 }
 
-// Combat NPC resource patches
+// NPC instances (combat + companion)
 
-// PatchCombatNpcHp updates combat NPC current HP.
-func (h *Handler) PatchCombatNpcHp(c *gin.Context) {
-	handlePost(c, h.repo.PatchCombatNpcHp)
+// CreateNpcInstance creates a combat or companion NPC instance.
+func (h *Handler) CreateNpcInstance(c *gin.Context) {
+	handlePost(c, h.repo.CreateNpcInstance)
 }
 
-// PatchCombatNpcFocus updates combat NPC current focus.
-func (h *Handler) PatchCombatNpcFocus(c *gin.Context) {
-	handlePost(c, h.repo.PatchCombatNpcFocus)
+// PatchNpcInstance updates an NPC instance (metadata or resource).
+func (h *Handler) PatchNpcInstance(c *gin.Context) {
+	handlePost(c, h.repo.PatchNpcInstance)
 }
 
-// PatchCombatNpcInvestiture updates combat NPC current investiture.
-func (h *Handler) PatchCombatNpcInvestiture(c *gin.Context) {
-	handlePost(c, h.repo.PatchCombatNpcInvestiture)
+// DeleteNpcInstance removes an NPC instance.
+func (h *Handler) DeleteNpcInstance(c *gin.Context) {
+	handleDelete(c, "id", h.repo.DeleteNpcInstance)
+}
+
+// GetHeroCompanions returns all companion NPC instances for a hero.
+func (h *Handler) GetHeroCompanions(c *gin.Context) {
+	handleGetByID(c, "id", h.repo.GetHeroNpcInstances)
+}
+
+// GetCompanionNpcOptions returns companion-eligible NPCs for the add companion picker.
+func (h *Handler) GetCompanionNpcOptions(c *gin.Context) {
+	handleGetByID(c, "id", h.repo.GetCompanionNpcOptions)
 }
