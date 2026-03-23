@@ -128,6 +128,7 @@ func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, he
 	// NPC instances (combat + companion — auth handled at DB level)
 	instances := v1.Group("/npc-instances")
 	{
+		instances.GET("/:id", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelRead), handler.GetNpcInstance)
 		instances.POST("", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelEdit), handler.CreateNpcInstance)
 		instances.PATCH("/:id", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelEdit), handler.PatchNpcInstance)
 		instances.DELETE("/:id", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelDelete), handler.DeleteNpcInstance)

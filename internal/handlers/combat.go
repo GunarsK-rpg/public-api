@@ -187,6 +187,11 @@ func (h *Handler) EndCombatRound(c *gin.Context) {
 
 // NPC instances (combat + companion)
 
+// GetNpcInstance returns a single NPC instance by ID.
+func (h *Handler) GetNpcInstance(c *gin.Context) {
+	handleGetByID(c, "id", h.repo.GetNpcInstance)
+}
+
 // CreateNpcInstance creates a combat or companion NPC instance.
 func (h *Handler) CreateNpcInstance(c *gin.Context) {
 	handlePost(c, h.repo.CreateNpcInstance)

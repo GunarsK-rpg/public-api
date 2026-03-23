@@ -24,6 +24,7 @@ type CombatRepository interface {
 	EndCombatRound(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 
 	// NPC instances (combat + companion)
+	GetNpcInstance(ctx context.Context, auth AuthContext, id int64) (json.RawMessage, error)
 	CreateNpcInstance(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 	PatchNpcInstance(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 	DeleteNpcInstance(ctx context.Context, auth AuthContext, id int64) (bool, error)
@@ -84,6 +85,10 @@ func (r *repository) EndCombatRound(ctx context.Context, auth AuthContext, data 
 }
 
 // NPC instances (combat + companion)
+
+func (r *repository) GetNpcInstance(ctx context.Context, auth AuthContext, id int64) (json.RawMessage, error) {
+	return r.callFunc(ctx, auth, "SELECT combat.get_npc_instance($1)", id)
+}
 
 func (r *repository) CreateNpcInstance(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error) {
 	return r.callFunc(ctx, auth, "SELECT combat.upsert_npc_instance($1::jsonb)", data)
