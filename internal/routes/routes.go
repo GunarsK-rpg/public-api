@@ -111,6 +111,7 @@ func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, he
 		combatDelete := commonMiddleware.RequirePermission(constants.ResourceCampaigns, commonMiddleware.LevelDelete)
 
 		campaigns.GET("/:id/npcs", handler.GetNpcOptions)
+		campaigns.GET("/:id/npcs/library", handler.GetNpcLibrary)
 		campaigns.GET("/:id/npcs/:nid", handler.GetNpc)
 		campaigns.POST("/:id/npcs", combatEdit, handler.CreateNpc)
 		campaigns.PUT("/:id/npcs/:nid", combatEdit, handler.UpdateNpc)
