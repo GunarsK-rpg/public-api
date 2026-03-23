@@ -116,6 +116,8 @@ func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, he
 		campaigns.POST("/:id/npcs", combatEdit, handler.CreateNpc)
 		campaigns.PUT("/:id/npcs/:nid", combatEdit, handler.UpdateNpc)
 		campaigns.DELETE("/:id/npcs/:nid", combatDelete, handler.DeleteNpc)
+		campaigns.POST("/:id/npcs/:nid/avatar", combatEdit, handler.SetNpcAvatar)
+		campaigns.DELETE("/:id/npcs/:nid/avatar", combatDelete, handler.DeleteNpcAvatar)
 
 		// Combat encounters
 		campaigns.GET("/:id/combats", handler.GetCombats)
