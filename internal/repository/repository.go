@@ -20,7 +20,6 @@ type AuthContext struct {
 
 // Repository defines the interface for data access.
 type Repository interface {
-	Ping(ctx context.Context) error
 	ClassifierRepository
 	HeroRepository
 	CampaignRepository
@@ -34,10 +33,6 @@ type repository struct {
 // New creates a new repository backed by a pgx pool.
 func New(pool *pgxpool.Pool) Repository {
 	return &repository{pool: pool}
-}
-
-func (r *repository) Ping(ctx context.Context) error {
-	return r.pool.Ping(ctx)
 }
 
 // withAuditTx begins a transaction, sets audit context, executes fn, and commits.

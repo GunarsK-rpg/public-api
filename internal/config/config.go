@@ -23,7 +23,7 @@ type Config struct {
 // Load loads all configuration from environment variables.
 func Load() *Config {
 	cfg := &Config{
-		Service:     common.NewServiceConfig(8090),
+		Service:     common.NewServiceConfig(8182),
 		Database:    common.NewDatabaseConfig(),
 		Redis:       common.NewRedisConfig(),
 		JWTSecret:   common.GetEnvRequired("JWT_SECRET"),

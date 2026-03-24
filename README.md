@@ -138,12 +138,12 @@ go test ./...                               # Test
 | `DB_USER` | Database user | `cosmere_app` |
 | `DB_PASSWORD` | Database password | - |
 | `DB_NAME` | Database name | `cosmere_rpg` |
-| `DB_SSL_MODE` | PostgreSQL SSL mode | `disable` |
+| `DB_SSLMODE` | PostgreSQL SSL mode | `disable` |
 | `JWT_SECRET` | JWT secret (must match auth-service) | - |
 | `ALLOWED_ORIGINS` | CORS allowed origins | - |
 | `LOG_LEVEL` | Log level (debug/info/warn/error) | `info` |
 | `LOG_FORMAT` | Log format (text/json) | `text` |
-| `MAX_BODY_SIZE` | Max request body size in bytes | `1048576` |
+| `MAX_BODY_SIZE` | Max request body size in bytes | `65536` |
 
 ## Testing
 

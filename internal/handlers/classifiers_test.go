@@ -29,8 +29,6 @@ func (s *stubRepo) GetAllClassifiers(ctx context.Context, auth repository.AuthCo
 	return s.data, s.err
 }
 
-func (s *stubRepo) Ping(_ context.Context) error { return nil }
-
 func setupRouter(handler *Handler) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()

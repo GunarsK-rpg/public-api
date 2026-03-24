@@ -132,7 +132,7 @@ func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, he
 	// NPC templates (direct access — auth handled at DB level)
 	npcs := v1.Group("/npcs")
 	{
-		npcs.GET("/:id", commonMiddleware.RequirePermission(constants.ResourceCampaigns, commonMiddleware.LevelRead), handler.GetNpcById)
+		npcs.GET("/:id", commonMiddleware.RequirePermission(constants.ResourceCampaigns, commonMiddleware.LevelRead), handler.GetNpcByID)
 	}
 
 	// NPC instances (combat + companion — auth handled at DB level)

@@ -43,6 +43,11 @@
       "labels": ["ci"]
     }
   ],
+  "postUpgradeTasks": {
+    "commands": ["go mod tidy"],
+    "fileFilters": ["go.mod", "go.sum"],
+    "executionMode": "branch"
+  },
   "prHourlyLimit": 5,
   "prConcurrentLimit": 10,
   "rebaseWhen": "behind-base-branch"
