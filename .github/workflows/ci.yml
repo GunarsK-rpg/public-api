@@ -57,14 +57,15 @@ jobs:
       - name: Generate coverage report
         run: go tool cover -html=coverage.out -o coverage.html
 
-      - name: Upload coverage to Codecov (optional)
+      - name: Upload coverage to Codecov
+        if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
         uses: codecov/codecov-action@v5
-        if: github.event_name == 'push'
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./coverage.out
-          fail_ci_if_error: false
-        continue-on-error: true
+          slug: GunarsK-rpg/public-api
+          files: ./coverage.out
+          fail_ci_if_error: true
+          verbose: true
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v7

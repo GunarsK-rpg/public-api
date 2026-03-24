@@ -16,20 +16,7 @@ import (
 	"github.com/GunarsK-rpg/public-api/internal/repository"
 )
 
-// stubRepo implements repository.Repository for testing classifiers.
-type stubRepo struct {
-	repository.Repository
-	callCount int
-	data      json.RawMessage
-	err       error
-}
-
-func (s *stubRepo) GetAllClassifiers(ctx context.Context, auth repository.AuthContext) (json.RawMessage, error) {
-	s.callCount++
-	return s.data, s.err
-}
-
-func setupRouter(handler *Handler) *gin.Engine {
+func setupClassifierRouter(handler *Handler) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
 	r.GET("/classifiers", func(c *gin.Context) {
@@ -45,8 +32,14 @@ func TestGetAllClassifiers_CacheHit(t *testing.T) {
 	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
 	c := cache.New(client)
 
-	repo := &stubRepo{data: json.RawMessage(`{"fresh":"data"}`)}
-	handler := New(repo, c)
+	callCount := 0
+	mock := &mockRepo{
+		getAllClassifiersFunc: func(_ context.Context, _ repository.AuthContext) (json.RawMessage, error) {
+			callCount++
+			return json.RawMessage(`{"fresh":"data"}`), nil
+		},
+	}
+	handler := New(mock, c)
 
 	// Pre-populate cache
 	ctx := context.Background()
@@ -55,7 +48,7 @@ func TestGetAllClassifiers_CacheHit(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	router := setupRouter(handler)
+	router := setupClassifierRouter(handler)
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/classifiers", nil)
 	router.ServeHTTP(w, req)
@@ -66,8 +59,8 @@ func TestGetAllClassifiers_CacheHit(t *testing.T) {
 	if w.Body.String() != string(cached) {
 		t.Fatalf("expected cached data %s, got %s", cached, w.Body.String())
 	}
-	if repo.callCount != 0 {
-		t.Fatalf("expected 0 DB calls on cache hit, got %d", repo.callCount)
+	if callCount != 0 {
+		t.Fatalf("expected 0 DB calls on cache hit, got %d", callCount)
 	}
 	if w.Header().Get("Cache-Control") != "private, max-age=3600" {
 		t.Fatalf("expected Cache-Control header, got %q", w.Header().Get("Cache-Control"))
@@ -80,10 +73,16 @@ func TestGetAllClassifiers_CacheMiss(t *testing.T) {
 	c := cache.New(client)
 
 	dbData := json.RawMessage(`{"from":"database"}`)
-	repo := &stubRepo{data: dbData}
-	handler := New(repo, c)
+	callCount := 0
+	mock := &mockRepo{
+		getAllClassifiersFunc: func(_ context.Context, _ repository.AuthContext) (json.RawMessage, error) {
+			callCount++
+			return dbData, nil
+		},
+	}
+	handler := New(mock, c)
 
-	router := setupRouter(handler)
+	router := setupClassifierRouter(handler)
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/classifiers", nil)
 	router.ServeHTTP(w, req)
@@ -94,8 +93,8 @@ func TestGetAllClassifiers_CacheMiss(t *testing.T) {
 	if w.Body.String() != string(dbData) {
 		t.Fatalf("expected DB data %s, got %s", dbData, w.Body.String())
 	}
-	if repo.callCount != 1 {
-		t.Fatalf("expected 1 DB call on cache miss, got %d", repo.callCount)
+	if callCount != 1 {
+		t.Fatalf("expected 1 DB call on cache miss, got %d", callCount)
 	}
 
 	// Verify data was stored in cache
@@ -120,10 +119,16 @@ func TestGetAllClassifiers_SecondCallHitsCache(t *testing.T) {
 	c := cache.New(client)
 
 	dbData := json.RawMessage(`{"from":"database"}`)
-	repo := &stubRepo{data: dbData}
-	handler := New(repo, c)
+	callCount := 0
+	mock := &mockRepo{
+		getAllClassifiersFunc: func(_ context.Context, _ repository.AuthContext) (json.RawMessage, error) {
+			callCount++
+			return dbData, nil
+		},
+	}
+	handler := New(mock, c)
 
-	router := setupRouter(handler)
+	router := setupClassifierRouter(handler)
 
 	// First call: cache miss, hits DB
 	w1 := httptest.NewRecorder()
@@ -148,8 +153,8 @@ func TestGetAllClassifiers_SecondCallHitsCache(t *testing.T) {
 	if w2.Header().Get("Cache-Control") != "private, max-age=3600" {
 		t.Fatalf("second call: expected Cache-Control header, got %q", w2.Header().Get("Cache-Control"))
 	}
-	if repo.callCount != 1 {
-		t.Fatalf("expected 1 DB call total (second should hit cache), got %d", repo.callCount)
+	if callCount != 1 {
+		t.Fatalf("expected 1 DB call total (second should hit cache), got %d", callCount)
 	}
 	if w2.Body.String() != string(dbData) {
 		t.Fatalf("expected same data on second call, got %s", w2.Body.String())
@@ -165,10 +170,16 @@ func TestGetAllClassifiers_RedisFallbackToDB(t *testing.T) {
 	mr.Close()
 
 	dbData := json.RawMessage(`{"from":"database"}`)
-	repo := &stubRepo{data: dbData}
-	handler := New(repo, c)
+	callCount := 0
+	mock := &mockRepo{
+		getAllClassifiersFunc: func(_ context.Context, _ repository.AuthContext) (json.RawMessage, error) {
+			callCount++
+			return dbData, nil
+		},
+	}
+	handler := New(mock, c)
 
-	router := setupRouter(handler)
+	router := setupClassifierRouter(handler)
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/classifiers", nil)
 	router.ServeHTTP(w, req)
@@ -179,7 +190,7 @@ func TestGetAllClassifiers_RedisFallbackToDB(t *testing.T) {
 	if w.Body.String() != string(dbData) {
 		t.Fatalf("expected DB data on Redis failure, got %s", w.Body.String())
 	}
-	if repo.callCount != 1 {
-		t.Fatalf("expected 1 DB call on Redis failure, got %d", repo.callCount)
+	if callCount != 1 {
+		t.Fatalf("expected 1 DB call on Redis failure, got %d", callCount)
 	}
 }
