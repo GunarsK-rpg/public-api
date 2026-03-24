@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"net/http"
 	"time"
@@ -32,7 +33,8 @@ func UserSync(pool *pgxpool.Pool, appCache *cache.Cache) gin.HandlerFunc {
 		}
 
 		ctx := c.Request.Context()
-		cacheKey := fmt.Sprintf("%s%d", userSyncKeyPrefix, auth.UserID)
+		claimsHash := fmt.Sprintf("%x", sha256.Sum256([]byte(auth.Username+"\x00"+auth.DisplayName)))[:12]
+		cacheKey := fmt.Sprintf("%s%d:%s", userSyncKeyPrefix, auth.UserID, claimsHash)
 
 		synced, err := appCache.HasFlag(ctx, cacheKey)
 		if err != nil {
