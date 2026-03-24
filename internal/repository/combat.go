@@ -14,7 +14,7 @@ type CombatRepository interface {
 	GetNpcOptions(ctx context.Context, auth AuthContext, campaignID int64) (json.RawMessage, error)
 	GetNpcLibrary(ctx context.Context, auth AuthContext, campaignID int64) (json.RawMessage, error)
 	GetNpc(ctx context.Context, auth AuthContext, id int64, campaignID int64) (json.RawMessage, error)
-	GetNpcById(ctx context.Context, auth AuthContext, id int64) (json.RawMessage, error)
+	GetNpcByID(ctx context.Context, auth AuthContext, id int64) (json.RawMessage, error)
 	UpsertNpc(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 	DeleteNpc(ctx context.Context, auth AuthContext, id int64, campaignID int64) (bool, error)
 	UpsertNpcAvatar(ctx context.Context, auth AuthContext, npcID int64, campaignID int64, avatarKey string) error
@@ -54,7 +54,7 @@ func (r *repository) GetNpc(ctx context.Context, auth AuthContext, id int64, cam
 	return r.callFunc(ctx, auth, "SELECT combat.get_npc($1, $2)", id, campaignID)
 }
 
-func (r *repository) GetNpcById(ctx context.Context, auth AuthContext, id int64) (json.RawMessage, error) {
+func (r *repository) GetNpcByID(ctx context.Context, auth AuthContext, id int64) (json.RawMessage, error) {
 	return r.callFunc(ctx, auth, "SELECT combat.get_npc($1)", id)
 }
 

@@ -6,9 +6,12 @@ WORKDIR /app
 # Install build dependencies
 RUN apk add --no-cache git
 
-# Copy source and tidy dependencies
+# Download dependencies first for layer caching
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source
 COPY . .
-RUN go mod tidy && go mod download
 
 # Build the binary
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o service ./cmd/api

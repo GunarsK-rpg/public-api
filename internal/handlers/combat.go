@@ -54,9 +54,9 @@ func (h *Handler) GetNpc(c *gin.Context) {
 	c.Data(http.StatusOK, "application/json", result)
 }
 
-// GetNpcById returns a full NPC stat block by ID (no campaign scoping).
-func (h *Handler) GetNpcById(c *gin.Context) {
-	handleGetByID(c, "id", h.repo.GetNpcById)
+// GetNpcByID returns a full NPC stat block by ID (no campaign scoping).
+func (h *Handler) GetNpcByID(c *gin.Context) {
+	handleGetByID(c, "id", h.repo.GetNpcByID)
 }
 
 // CreateNpc creates a custom NPC.
