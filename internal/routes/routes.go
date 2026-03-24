@@ -11,6 +11,7 @@ import (
 	"github.com/GunarsK-portfolio/portfolio-common/jwt"
 	commonMiddleware "github.com/GunarsK-portfolio/portfolio-common/middleware"
 
+	"github.com/GunarsK-rpg/public-api/internal/cache"
 	"github.com/GunarsK-rpg/public-api/internal/config"
 	"github.com/GunarsK-rpg/public-api/internal/constants"
 	"github.com/GunarsK-rpg/public-api/internal/handlers"
@@ -18,7 +19,7 @@ import (
 )
 
 // Setup configures all routes for the service.
-func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, healthAgg *health.Aggregator, pool *pgxpool.Pool) {
+func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, healthAgg *health.Aggregator, pool *pgxpool.Pool, appCache *cache.Cache) {
 	// Public endpoints (no auth)
 	router.GET("/health", healthAgg.Handler())
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
@@ -34,7 +35,7 @@ func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, he
 	v1 := router.Group("/api/v1")
 	v1.Use(authMiddleware.ValidateToken())
 	v1.Use(authMiddleware.AddTTLHeader())
-	v1.Use(middleware.UserSync(pool))
+	v1.Use(middleware.UserSync(pool, appCache))
 	v1.Use(middleware.BodyLimit(cfg.MaxBodySize))
 
 	// Classifiers routes (read-only, single batch endpoint)

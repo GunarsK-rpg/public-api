@@ -1,13 +1,13 @@
 package handlers
 
 import (
-	"log/slog"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 
 	commonHandlers "github.com/GunarsK-portfolio/portfolio-common/handlers"
+	"github.com/GunarsK-portfolio/portfolio-common/logger"
 )
 
 const (
@@ -29,7 +29,7 @@ func (h *Handler) GetAllClassifiers(c *gin.Context) {
 	if h.cache != nil {
 		cached, err := h.cache.Get(ctx, classifiersCacheKey)
 		if err != nil {
-			slog.Warn("redis cache get failed", "key", classifiersCacheKey, "error", err)
+			logger.GetLogger(c).Warn("redis cache get failed", "key", classifiersCacheKey, "error", err)
 		}
 		if cached != nil {
 			c.Header("Cache-Control", "private, max-age=3600")
@@ -48,7 +48,7 @@ func (h *Handler) GetAllClassifiers(c *gin.Context) {
 	// Store in cache (best-effort)
 	if h.cache != nil {
 		if err := h.cache.Set(ctx, classifiersCacheKey, result, classifiersCacheTTL); err != nil {
-			slog.Warn("redis cache set failed", "key", classifiersCacheKey, "error", err)
+			logger.GetLogger(c).Warn("redis cache set failed", "key", classifiersCacheKey, "error", err)
 		}
 	}
 

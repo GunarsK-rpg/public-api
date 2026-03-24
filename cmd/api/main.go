@@ -75,7 +75,7 @@ func main() {
 	)
 	router.Use(securityMiddleware.Apply())
 
-	routes.Setup(router, handler, cfg, healthAgg, pool)
+	routes.Setup(router, handler, cfg, healthAgg, pool, appCache)
 
 	appLogger.Info("Public API ready", "port", cfg.Service.Port)
 	serverCfg := server.DefaultConfig(strconv.Itoa(cfg.Service.Port))
