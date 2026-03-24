@@ -1,45 +1,70 @@
 package middleware
 
 import (
-	"log/slog"
+	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/GunarsK-portfolio/portfolio-common/logger"
+
+	"github.com/GunarsK-rpg/public-api/internal/cache"
 	"github.com/GunarsK-rpg/public-api/internal/handlers"
 )
 
+const (
+	userSyncTTL       = 15 * time.Minute
+	userSyncKeyPrefix = "rpg:usersync:"
+)
+
 // UserSync returns middleware that syncs the authenticated user to the RPG database.
+// Uses Redis to skip redundant syncs within the TTL window.
 // Must be applied after auth middleware (requires user_id and username in context).
-func UserSync(pool *pgxpool.Pool) gin.HandlerFunc {
+func UserSync(pool *pgxpool.Pool, appCache *cache.Cache) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		auth, err := handlers.GetAuthContext(c)
 		if err != nil {
-			slog.Error("failed to get auth context", "error", err)
+			logger.GetLogger(c).Error("failed to get auth context", "error", err)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 			return
 		}
 
-		// Sync user to RPG database (empty display_name passed as NULL)
+		ctx := c.Request.Context()
+		cacheKey := fmt.Sprintf("%s%d", userSyncKeyPrefix, auth.UserID)
+
+		synced, err := appCache.HasFlag(ctx, cacheKey)
+		if err != nil {
+			logger.GetLogger(c).Warn("usersync cache check failed, falling back to DB sync", "error", err)
+		}
+		if synced {
+			c.Next()
+			return
+		}
+
 		var displayName *string
 		if auth.DisplayName != "" {
 			displayName = &auth.DisplayName
 		}
 		_, err = pool.Exec(
-			c.Request.Context(),
+			ctx,
 			"SELECT auth.sync_user($1, $2, $3)",
 			auth.UserID,
 			auth.Username,
 			displayName,
 		)
 		if err != nil {
-			slog.Error("failed to sync user",
+			logger.GetLogger(c).Error("failed to sync user",
 				"user_id", auth.UserID,
 				"error", err,
 			)
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 			return
+		}
+
+		if err := appCache.SetFlag(ctx, cacheKey, userSyncTTL); err != nil {
+			logger.GetLogger(c).Warn("failed to set usersync cache flag", "user_id", auth.UserID, "error", err)
 		}
 
 		c.Next()

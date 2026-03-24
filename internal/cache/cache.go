@@ -35,3 +35,17 @@ func (c *Cache) Get(ctx context.Context, key string) (json.RawMessage, error) {
 func (c *Cache) Set(ctx context.Context, key string, data json.RawMessage, ttl time.Duration) error {
 	return c.client.Set(ctx, key, []byte(data), ttl).Err()
 }
+
+// HasFlag returns true if the flag key exists in cache.
+func (c *Cache) HasFlag(ctx context.Context, key string) (bool, error) {
+	n, err := c.client.Exists(ctx, key).Result()
+	if err != nil {
+		return false, err
+	}
+	return n > 0, nil
+}
+
+// SetFlag stores a flag key with the given TTL (value is irrelevant).
+func (c *Cache) SetFlag(ctx context.Context, key string, ttl time.Duration) error {
+	return c.client.Set(ctx, key, "1", ttl).Err()
+}

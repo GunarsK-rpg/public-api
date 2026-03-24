@@ -52,6 +52,59 @@ func TestCache_Set_Then_Get(t *testing.T) {
 	}
 }
 
+func TestCache_HasFlag_Miss(t *testing.T) {
+	client, _ := setupTestRedis(t)
+	c := New(client)
+
+	exists, err := c.HasFlag(context.Background(), "rpg:usersync:999")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if exists {
+		t.Fatal("expected false for missing flag")
+	}
+}
+
+func TestCache_SetFlag_Then_HasFlag(t *testing.T) {
+	client, _ := setupTestRedis(t)
+	c := New(client)
+	ctx := context.Background()
+
+	err := c.SetFlag(ctx, "rpg:usersync:1", 1*time.Hour)
+	if err != nil {
+		t.Fatalf("expected no error on SetFlag, got %v", err)
+	}
+
+	exists, err := c.HasFlag(ctx, "rpg:usersync:1")
+	if err != nil {
+		t.Fatalf("expected no error on HasFlag, got %v", err)
+	}
+	if !exists {
+		t.Fatal("expected true after SetFlag")
+	}
+}
+
+func TestCache_SetFlag_Respects_TTL(t *testing.T) {
+	client, mr := setupTestRedis(t)
+	c := New(client)
+	ctx := context.Background()
+
+	err := c.SetFlag(ctx, "rpg:usersync:1", 15*time.Minute)
+	if err != nil {
+		t.Fatalf("expected no error on SetFlag, got %v", err)
+	}
+
+	mr.FastForward(16 * time.Minute)
+
+	exists, err := c.HasFlag(ctx, "rpg:usersync:1")
+	if err != nil {
+		t.Fatalf("expected no error after expiry, got %v", err)
+	}
+	if exists {
+		t.Fatal("expected false after TTL expiry")
+	}
+}
+
 func TestCache_Set_Respects_TTL(t *testing.T) {
 	client, mr := setupTestRedis(t)
 	c := New(client)
