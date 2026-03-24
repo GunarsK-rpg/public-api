@@ -1,6 +1,7 @@
 # Public API
 
 ![CI](https://github.com/GunarsK-rpg/public-api/workflows/CI/badge.svg)
+[![codecov](https://codecov.io/gh/GunarsK-rpg/public-api/graph/badge.svg)](https://codecov.io/gh/GunarsK-rpg/public-api)
 [![Go Report Card](https://goreportcard.com/badge/github.com/GunarsK-rpg/public-api)](https://goreportcard.com/report/github.com/GunarsK-rpg/public-api)
 [![CodeRabbit](https://img.shields.io/coderabbit/prs/github/GunarsK-rpg/public-api?label=CodeRabbit&color=2ea44f)](https://coderabbit.ai)
 
@@ -130,20 +131,20 @@ go test ./...                               # Test
 
 ## Environment Variables
 
-| Variable | Description | Default |
-| -------- | ----------- | ------- |
-| `PORT` | Server port | `8182` |
-| `DB_HOST` | PostgreSQL host | `localhost` |
-| `DB_PORT` | PostgreSQL port | `5432` |
-| `DB_USER` | Database user | `cosmere_app` |
-| `DB_PASSWORD` | Database password | - |
-| `DB_NAME` | Database name | `cosmere_rpg` |
-| `DB_SSLMODE` | PostgreSQL SSL mode | `disable` |
-| `JWT_SECRET` | JWT secret (must match auth-service) | - |
-| `ALLOWED_ORIGINS` | CORS allowed origins | - |
-| `LOG_LEVEL` | Log level (debug/info/warn/error) | `info` |
-| `LOG_FORMAT` | Log format (text/json) | `text` |
-| `MAX_BODY_SIZE` | Max request body size in bytes | `65536` |
+| Variable          | Description                          | Default       |
+| ----------------- | ------------------------------------ | ------------- |
+| `PORT`            | Server port                          | `8182`        |
+| `DB_HOST`         | PostgreSQL host                      | `localhost`   |
+| `DB_PORT`         | PostgreSQL port                      | `5432`        |
+| `DB_USER`         | Database user                        | `cosmere_app` |
+| `DB_PASSWORD`     | Database password                    | -             |
+| `DB_NAME`         | Database name                        | `cosmere_rpg` |
+| `DB_SSLMODE`      | PostgreSQL SSL mode                  | `disable`     |
+| `JWT_SECRET`      | JWT secret (must match auth-service) | -             |
+| `ALLOWED_ORIGINS` | CORS allowed origins                 | -             |
+| `LOG_LEVEL`       | Log level (debug/info/warn/error)    | `info`        |
+| `LOG_FORMAT`      | Log format (text/json)               | `text`        |
+| `MAX_BODY_SIZE`   | Max request body size in bytes       | `65536`       |
 
 ## Testing
 
