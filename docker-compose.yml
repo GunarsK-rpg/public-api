@@ -6,14 +6,14 @@ services:
     ports:
       - "127.0.0.1:8182:8182"
     environment:
-      - PORT=${PUBLIC_API_PORT}
+      - PORT=${PORT}
       - ENVIRONMENT=${ENVIRONMENT}
       - GIN_MODE=${GIN_MODE}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
-      - DB_NAME=${POSTGRES_DB}
+      - DB_NAME=${DB_NAME}
       - DB_SSLMODE=${DB_SSLMODE}
       - JWT_SECRET=${JWT_SECRET}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}

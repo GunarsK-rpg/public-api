@@ -21,11 +21,14 @@ go test -v ./internal/handlers/
 
 ## Test Files
 
-**`internal/cache/cache_test.go`** - 3 tests
+**`internal/cache/cache_test.go`** - 6 tests
 
 - Cache miss returns nil (1)
 - Set then get returns value (1)
-- TTL expiry removes entry (1)
+- HasFlag miss returns false (1)
+- SetFlag then HasFlag returns true (1)
+- SetFlag respects TTL (1)
+- Set respects TTL (1)
 
 **`internal/handlers/classifiers_test.go`** - 7 tests
 

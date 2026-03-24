@@ -35,7 +35,7 @@ RUN chown -R app:app /app
 USER app
 
 # Expose port
-EXPOSE 8090
+EXPOSE 8182
 
 # Run the binary
 CMD ["./service"]
