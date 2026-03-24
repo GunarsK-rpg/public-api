@@ -1,22 +1,26 @@
 services:
   api:
     build: .
+    container_name: rpg-public-api
+    restart: unless-stopped
     ports:
-      - "8182:8182"
+      - "127.0.0.1:8182:8182"
     environment:
-      - SERVICE_NAME=public-api
-      - PORT=8182
-      - ENVIRONMENT=development
-      # GIN_MODE=release for containerized runs (debug in .env.example for local dev)
-      - GIN_MODE=release
-      - DB_HOST=host.docker.internal
-      - DB_PORT=5432
+      - PORT=${PUBLIC_API_PORT}
+      - ENVIRONMENT=${ENVIRONMENT}
+      - GIN_MODE=${GIN_MODE}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
-      - DB_NAME=cosmere_rpg
-      - DB_SSL_MODE=disable
+      - DB_NAME=${POSTGRES_DB}
+      - DB_SSLMODE=${DB_SSLMODE}
       - JWT_SECRET=${JWT_SECRET}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
-      - LOG_LEVEL=info
-      - LOG_FORMAT=json
-      - MAX_BODY_SIZE=1048576
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - LOG_FORMAT=${LOG_FORMAT}
+      - LOG_SOURCE=${LOG_SOURCE}
+      - MAX_BODY_SIZE=${MAX_BODY_SIZE}
