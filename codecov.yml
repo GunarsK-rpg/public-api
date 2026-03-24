@@ -1,0 +1,19 @@
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 5%
+    patch:
+      default:
+        target: auto
+        threshold: 5%
+
+ignore:
+  - "cmd/"
+  - "internal/config/"
+  - "internal/constants/"
+  - "internal/database/"
+  - "internal/models/"
+  - "internal/repository/"
+  - "internal/routes/routes.go"
