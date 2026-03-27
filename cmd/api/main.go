@@ -47,7 +47,11 @@ func main() {
 	}
 	defer pool.Close()
 
-	redisClient := cache.NewRedisClient(cfg.Redis, cfg.Service.Environment)
+	redisClient, err := cache.NewRedisClient(cfg.Redis, cfg.Service.Environment)
+	if err != nil {
+		appLogger.Error("Redis connection failed", "error", err)
+		os.Exit(1)
+	}
 	defer redisClient.Close()
 
 	healthAgg := health.NewAggregator(3 * time.Second)

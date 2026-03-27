@@ -66,8 +66,8 @@ type mockRepo struct {
 	removeFavoriteActionFunc func(ctx context.Context, auth repository.AuthContext, id int64) (bool, error)
 
 	// Heroes - Avatar
-	upsertHeroAvatarFunc func(ctx context.Context, auth repository.AuthContext, heroID int64, avatarKey string) error
-	deleteHeroAvatarFunc func(ctx context.Context, auth repository.AuthContext, heroID int64) error
+	upsertHeroAvatarFunc func(ctx context.Context, auth repository.AuthContext, heroID int64, avatarKey string) (*string, error)
+	deleteHeroAvatarFunc func(ctx context.Context, auth repository.AuthContext, heroID int64) (*string, error)
 
 	// Heroes - Sub-resource deletes
 	deleteHeroAttributeFunc   func(ctx context.Context, auth repository.AuthContext, id int64) (bool, error)
@@ -99,8 +99,8 @@ type mockRepo struct {
 	getNpcByIDFunc      func(ctx context.Context, auth repository.AuthContext, id int64) (json.RawMessage, error)
 	upsertNpcFunc       func(ctx context.Context, auth repository.AuthContext, data json.RawMessage) (json.RawMessage, error)
 	deleteNpcFunc       func(ctx context.Context, auth repository.AuthContext, id int64, campaignID int64) (bool, error)
-	upsertNpcAvatarFunc func(ctx context.Context, auth repository.AuthContext, npcID int64, campaignID int64, avatarKey string) error
-	deleteNpcAvatarFunc func(ctx context.Context, auth repository.AuthContext, npcID int64, campaignID int64) error
+	upsertNpcAvatarFunc func(ctx context.Context, auth repository.AuthContext, npcID int64, campaignID int64, avatarKey string) (*string, error)
+	deleteNpcAvatarFunc func(ctx context.Context, auth repository.AuthContext, npcID int64, campaignID int64) (*string, error)
 
 	// Combat - Encounters
 	getCombatsFunc     func(ctx context.Context, auth repository.AuthContext, campaignID int64) (json.RawMessage, error)
@@ -434,18 +434,18 @@ func (m *mockRepo) RemoveFavoriteAction(ctx context.Context, auth repository.Aut
 // Heroes - Avatar
 // =============================================================================
 
-func (m *mockRepo) UpsertHeroAvatar(ctx context.Context, auth repository.AuthContext, heroID int64, avatarKey string) error {
+func (m *mockRepo) UpsertHeroAvatar(ctx context.Context, auth repository.AuthContext, heroID int64, avatarKey string) (*string, error) {
 	if m.upsertHeroAvatarFunc != nil {
 		return m.upsertHeroAvatarFunc(ctx, auth, heroID, avatarKey)
 	}
-	return errNotImplemented
+	return nil, errNotImplemented
 }
 
-func (m *mockRepo) DeleteHeroAvatar(ctx context.Context, auth repository.AuthContext, heroID int64) error {
+func (m *mockRepo) DeleteHeroAvatar(ctx context.Context, auth repository.AuthContext, heroID int64) (*string, error) {
 	if m.deleteHeroAvatarFunc != nil {
 		return m.deleteHeroAvatarFunc(ctx, auth, heroID)
 	}
-	return errNotImplemented
+	return nil, errNotImplemented
 }
 
 // =============================================================================
@@ -635,18 +635,18 @@ func (m *mockRepo) DeleteNpc(ctx context.Context, auth repository.AuthContext, i
 	return false, errNotImplemented
 }
 
-func (m *mockRepo) UpsertNpcAvatar(ctx context.Context, auth repository.AuthContext, npcID int64, campaignID int64, avatarKey string) error {
+func (m *mockRepo) UpsertNpcAvatar(ctx context.Context, auth repository.AuthContext, npcID int64, campaignID int64, avatarKey string) (*string, error) {
 	if m.upsertNpcAvatarFunc != nil {
 		return m.upsertNpcAvatarFunc(ctx, auth, npcID, campaignID, avatarKey)
 	}
-	return errNotImplemented
+	return nil, errNotImplemented
 }
 
-func (m *mockRepo) DeleteNpcAvatar(ctx context.Context, auth repository.AuthContext, npcID int64, campaignID int64) error {
+func (m *mockRepo) DeleteNpcAvatar(ctx context.Context, auth repository.AuthContext, npcID int64, campaignID int64) (*string, error) {
 	if m.deleteNpcAvatarFunc != nil {
 		return m.deleteNpcAvatarFunc(ctx, auth, npcID, campaignID)
 	}
-	return errNotImplemented
+	return nil, errNotImplemented
 }
 
 // =============================================================================

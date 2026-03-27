@@ -24,14 +24,14 @@ func TestSetHeroAvatar_Success(t *testing.T) {
 		handler.SetHeroAvatar(c)
 	})
 
-	mock.upsertHeroAvatarFunc = func(_ context.Context, _ repository.AuthContext, heroID int64, avatarKey string) error {
+	mock.upsertHeroAvatarFunc = func(_ context.Context, _ repository.AuthContext, heroID int64, avatarKey string) (*string, error) {
 		if heroID != 42 {
 			t.Errorf("heroID = %d, want 42", heroID)
 		}
 		if avatarKey != "abc123" {
 			t.Errorf("avatarKey = %q, want %q", avatarKey, "abc123")
 		}
-		return nil
+		return nil, nil
 	}
 
 	w := performRequest(t, router, "POST", "/heroes/42/avatar", []byte(`{"avatarKey":"abc123"}`))
@@ -100,8 +100,8 @@ func TestSetHeroAvatar_RepoError(t *testing.T) {
 		handler.SetHeroAvatar(c)
 	})
 
-	mock.upsertHeroAvatarFunc = func(_ context.Context, _ repository.AuthContext, _ int64, _ string) error {
-		return errors.New("db error")
+	mock.upsertHeroAvatarFunc = func(_ context.Context, _ repository.AuthContext, _ int64, _ string) (*string, error) {
+		return nil, errors.New("db error")
 	}
 
 	w := performRequest(t, router, "POST", "/heroes/42/avatar", []byte(`{"avatarKey":"abc123"}`))
@@ -124,11 +124,11 @@ func TestDeleteHeroAvatar_Success(t *testing.T) {
 		handler.DeleteHeroAvatar(c)
 	})
 
-	mock.deleteHeroAvatarFunc = func(_ context.Context, _ repository.AuthContext, heroID int64) error {
+	mock.deleteHeroAvatarFunc = func(_ context.Context, _ repository.AuthContext, heroID int64) (*string, error) {
 		if heroID != 42 {
 			t.Errorf("heroID = %d, want 42", heroID)
 		}
-		return nil
+		return nil, nil
 	}
 
 	w := performRequest(t, router, "DELETE", "/heroes/42/avatar", nil)
@@ -162,8 +162,8 @@ func TestDeleteHeroAvatar_RepoError(t *testing.T) {
 		handler.DeleteHeroAvatar(c)
 	})
 
-	mock.deleteHeroAvatarFunc = func(_ context.Context, _ repository.AuthContext, _ int64) error {
-		return errors.New("db error")
+	mock.deleteHeroAvatarFunc = func(_ context.Context, _ repository.AuthContext, _ int64) (*string, error) {
+		return nil, errors.New("db error")
 	}
 
 	w := performRequest(t, router, "DELETE", "/heroes/42/avatar", nil)
@@ -186,7 +186,7 @@ func TestSetNpcAvatar_Success(t *testing.T) {
 		handler.SetNpcAvatar(c)
 	})
 
-	mock.upsertNpcAvatarFunc = func(_ context.Context, _ repository.AuthContext, npcID, campaignID int64, avatarKey string) error {
+	mock.upsertNpcAvatarFunc = func(_ context.Context, _ repository.AuthContext, npcID, campaignID int64, avatarKey string) (*string, error) {
 		if npcID != 10 {
 			t.Errorf("npcID = %d, want 10", npcID)
 		}
@@ -196,7 +196,7 @@ func TestSetNpcAvatar_Success(t *testing.T) {
 		if avatarKey != "npc-avatar" {
 			t.Errorf("avatarKey = %q, want %q", avatarKey, "npc-avatar")
 		}
-		return nil
+		return nil, nil
 	}
 
 	w := performRequest(t, router, "POST", "/campaigns/3/npcs/10/avatar", []byte(`{"avatarKey":"npc-avatar"}`))
@@ -251,14 +251,14 @@ func TestDeleteNpcAvatar_Success(t *testing.T) {
 		handler.DeleteNpcAvatar(c)
 	})
 
-	mock.deleteNpcAvatarFunc = func(_ context.Context, _ repository.AuthContext, npcID, campaignID int64) error {
+	mock.deleteNpcAvatarFunc = func(_ context.Context, _ repository.AuthContext, npcID, campaignID int64) (*string, error) {
 		if npcID != 10 {
 			t.Errorf("npcID = %d, want 10", npcID)
 		}
 		if campaignID != 3 {
 			t.Errorf("campaignID = %d, want 3", campaignID)
 		}
-		return nil
+		return nil, nil
 	}
 
 	w := performRequest(t, router, "DELETE", "/campaigns/3/npcs/10/avatar", nil)

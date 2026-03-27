@@ -11,7 +11,7 @@ import (
 )
 
 // NewRedisClient creates a new Redis client instance.
-func NewRedisClient(cfg common.RedisConfig, environment string) *redis.Client {
+func NewRedisClient(cfg common.RedisConfig, environment string) (*redis.Client, error) {
 	options := &redis.Options{
 		Addr:     fmt.Sprintf("%s:%s", cfg.Host, strconv.Itoa(cfg.Port)),
 		Password: cfg.Password,
@@ -29,8 +29,8 @@ func NewRedisClient(cfg common.RedisConfig, environment string) *redis.Client {
 
 	ctx := context.Background()
 	if err := client.Ping(ctx).Err(); err != nil {
-		panic(fmt.Sprintf("Failed to connect to Redis: %v", err))
+		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
 	}
 
-	return client
+	return client, nil
 }
