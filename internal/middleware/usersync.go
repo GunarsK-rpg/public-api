@@ -1,13 +1,14 @@
 package middleware
 
 import (
+	"context"
 	"crypto/sha256"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/GunarsK-portfolio/portfolio-common/logger"
 
@@ -20,10 +21,15 @@ const (
 	userSyncKeyPrefix = "rpg:usersync:"
 )
 
+// DBExecer executes SQL statements. Implemented by *pgxpool.Pool.
+type DBExecer interface {
+	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+}
+
 // UserSync returns middleware that syncs the authenticated user to the RPG database.
 // Uses Redis to skip redundant syncs within the TTL window.
 // Must be applied after auth middleware (requires user_id and username in context).
-func UserSync(pool *pgxpool.Pool, appCache *cache.Cache) gin.HandlerFunc {
+func UserSync(pool DBExecer, appCache *cache.Cache) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		auth, err := handlers.GetAuthContext(c)
 		if err != nil {
