@@ -20,7 +20,7 @@ func (h *Handler) GetHeroes(c *gin.Context) {
 
 	var query requests.GetHeroesQuery
 	if err := c.ShouldBindQuery(&query); err != nil {
-		commonHandlers.RespondError(c, http.StatusBadRequest, "invalid query parameters")
+		commonHandlers.RespondError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
