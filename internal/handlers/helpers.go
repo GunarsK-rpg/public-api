@@ -35,6 +35,12 @@ type RepoStringFunc func(ctx context.Context, auth repository.AuthContext, code 
 // RepoDeleteFunc calls a repository delete method.
 type RepoDeleteFunc func(ctx context.Context, auth repository.AuthContext, id int64) (bool, error)
 
+// RepoTwoIDFunc calls a repository method with two ID parameters.
+type RepoTwoIDFunc func(ctx context.Context, auth repository.AuthContext, id1 int64, id2 int64) (json.RawMessage, error)
+
+// RepoDeleteTwoIDFunc calls a repository delete method with two ID parameters.
+type RepoDeleteTwoIDFunc func(ctx context.Context, auth repository.AuthContext, id1 int64, id2 int64) (bool, error)
+
 // ----------------------------------------------------------------------------
 // Auth context
 // ----------------------------------------------------------------------------
@@ -196,6 +202,74 @@ func handleDelete(c *gin.Context, paramName string, fn RepoDeleteFunc) {
 	}
 
 	deleted, err := fn(c.Request.Context(), auth, id)
+	if err != nil {
+		HandlePgxError(c, err)
+		return
+	}
+
+	if !deleted {
+		commonHandlers.RespondError(c, http.StatusNotFound, "not found")
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
+// handleGetByTwoIDs: auth → two path params → repo call → null check → JSON response
+func handleGetByTwoIDs(c *gin.Context, param1, param2 string, fn RepoTwoIDFunc) {
+	auth, err := GetAuthContext(c)
+	if err != nil {
+		commonHandlers.RespondError(c, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	id1, err := getPathParamInt64(c, param1)
+	if err != nil {
+		commonHandlers.RespondError(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	id2, err := getPathParamInt64(c, param2)
+	if err != nil {
+		commonHandlers.RespondError(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	result, err := fn(c.Request.Context(), auth, id1, id2)
+	if err != nil {
+		HandlePgxError(c, err)
+		return
+	}
+
+	if result == nil || string(result) == "null" {
+		commonHandlers.RespondError(c, http.StatusNotFound, "not found")
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", result)
+}
+
+// handleDeleteByTwoIDs: auth → two path params → repo call → 204 or 404
+func handleDeleteByTwoIDs(c *gin.Context, param1, param2 string, fn RepoDeleteTwoIDFunc) {
+	auth, err := GetAuthContext(c)
+	if err != nil {
+		commonHandlers.RespondError(c, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	id1, err := getPathParamInt64(c, param1)
+	if err != nil {
+		commonHandlers.RespondError(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	id2, err := getPathParamInt64(c, param2)
+	if err != nil {
+		commonHandlers.RespondError(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	deleted, err := fn(c.Request.Context(), auth, id1, id2)
 	if err != nil {
 		HandlePgxError(c, err)
 		return

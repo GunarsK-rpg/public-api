@@ -1,11 +1,7 @@
 package handlers
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
-
-	commonHandlers "github.com/GunarsK-portfolio/portfolio-common/handlers"
 )
 
 // NPCs (templates)
@@ -22,36 +18,7 @@ func (h *Handler) GetNpcLibrary(c *gin.Context) {
 
 // GetNpc returns a full NPC stat block.
 func (h *Handler) GetNpc(c *gin.Context) {
-	auth, err := GetAuthContext(c)
-	if err != nil {
-		commonHandlers.RespondError(c, http.StatusUnauthorized, "unauthorized")
-		return
-	}
-
-	npcID, err := getPathParamInt64(c, "nid")
-	if err != nil {
-		commonHandlers.RespondError(c, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	campaignID, err := getPathParamInt64(c, "id")
-	if err != nil {
-		commonHandlers.RespondError(c, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	result, err := h.repo.GetNpc(c.Request.Context(), auth, npcID, campaignID)
-	if err != nil {
-		HandlePgxError(c, err)
-		return
-	}
-
-	if result == nil || string(result) == "null" {
-		commonHandlers.RespondError(c, http.StatusNotFound, "not found")
-		return
-	}
-
-	c.Data(http.StatusOK, "application/json", result)
+	handleGetByTwoIDs(c, "nid", "id", h.repo.GetNpc)
 }
 
 // GetNpcByID returns a full NPC stat block by ID (no campaign scoping).
@@ -71,36 +38,7 @@ func (h *Handler) UpdateNpc(c *gin.Context) {
 
 // DeleteNpc soft-deletes a custom NPC.
 func (h *Handler) DeleteNpc(c *gin.Context) {
-	auth, err := GetAuthContext(c)
-	if err != nil {
-		commonHandlers.RespondError(c, http.StatusUnauthorized, "unauthorized")
-		return
-	}
-
-	npcID, err := getPathParamInt64(c, "nid")
-	if err != nil {
-		commonHandlers.RespondError(c, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	campaignID, err := getPathParamInt64(c, "id")
-	if err != nil {
-		commonHandlers.RespondError(c, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	deleted, err := h.repo.DeleteNpc(c.Request.Context(), auth, npcID, campaignID)
-	if err != nil {
-		HandlePgxError(c, err)
-		return
-	}
-
-	if !deleted {
-		commonHandlers.RespondError(c, http.StatusNotFound, "not found")
-		return
-	}
-
-	c.Status(http.StatusNoContent)
+	handleDeleteByTwoIDs(c, "nid", "id", h.repo.DeleteNpc)
 }
 
 // Combats
@@ -112,36 +50,7 @@ func (h *Handler) GetCombats(c *gin.Context) {
 
 // GetCombat returns a single combat with NPC instances.
 func (h *Handler) GetCombat(c *gin.Context) {
-	auth, err := GetAuthContext(c)
-	if err != nil {
-		commonHandlers.RespondError(c, http.StatusUnauthorized, "unauthorized")
-		return
-	}
-
-	combatID, err := getPathParamInt64(c, "cid")
-	if err != nil {
-		commonHandlers.RespondError(c, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	campaignID, err := getPathParamInt64(c, "id")
-	if err != nil {
-		commonHandlers.RespondError(c, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	result, err := h.repo.GetCombat(c.Request.Context(), auth, combatID, campaignID)
-	if err != nil {
-		HandlePgxError(c, err)
-		return
-	}
-
-	if result == nil || string(result) == "null" {
-		commonHandlers.RespondError(c, http.StatusNotFound, "not found")
-		return
-	}
-
-	c.Data(http.StatusOK, "application/json", result)
+	handleGetByTwoIDs(c, "cid", "id", h.repo.GetCombat)
 }
 
 // CreateCombat creates a new combat encounter.
@@ -156,36 +65,7 @@ func (h *Handler) UpdateCombat(c *gin.Context) {
 
 // DeleteCombat deletes a combat encounter.
 func (h *Handler) DeleteCombat(c *gin.Context) {
-	auth, err := GetAuthContext(c)
-	if err != nil {
-		commonHandlers.RespondError(c, http.StatusUnauthorized, "unauthorized")
-		return
-	}
-
-	combatID, err := getPathParamInt64(c, "cid")
-	if err != nil {
-		commonHandlers.RespondError(c, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	campaignID, err := getPathParamInt64(c, "id")
-	if err != nil {
-		commonHandlers.RespondError(c, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	deleted, err := h.repo.DeleteCombat(c.Request.Context(), auth, combatID, campaignID)
-	if err != nil {
-		HandlePgxError(c, err)
-		return
-	}
-
-	if !deleted {
-		commonHandlers.RespondError(c, http.StatusNotFound, "not found")
-		return
-	}
-
-	c.Status(http.StatusNoContent)
+	handleDeleteByTwoIDs(c, "cid", "id", h.repo.DeleteCombat)
 }
 
 // Combat round management
