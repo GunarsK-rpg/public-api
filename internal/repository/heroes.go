@@ -61,8 +61,8 @@ type HeroRepository interface {
 	RemoveFavoriteAction(ctx context.Context, auth AuthContext, id int64) (bool, error)
 
 	// Avatar
-	UpsertHeroAvatar(ctx context.Context, auth AuthContext, heroID int64, avatarKey string) error
-	DeleteHeroAvatar(ctx context.Context, auth AuthContext, heroID int64) error
+	UpsertHeroAvatar(ctx context.Context, auth AuthContext, heroID int64, avatarKey string) (*string, error)
+	DeleteHeroAvatar(ctx context.Context, auth AuthContext, heroID int64) (*string, error)
 
 	// Sub-resource deletes (13)
 	DeleteHeroAttribute(ctx context.Context, auth AuthContext, id int64) (bool, error)
@@ -304,16 +304,24 @@ func (r *repository) DeleteHeroCulture(ctx context.Context, auth AuthContext, id
 
 // Avatar
 
-func (r *repository) UpsertHeroAvatar(ctx context.Context, auth AuthContext, heroID int64, avatarKey string) error {
-	return r.withAuditTx(ctx, auth, func(tx pgx.Tx) error {
-		_, err := tx.Exec(ctx, "SELECT heroes.upsert_hero_avatar($1, $2)", heroID, avatarKey)
-		return err
+func (r *repository) UpsertHeroAvatar(ctx context.Context, auth AuthContext, heroID int64, avatarKey string) (*string, error) {
+	var oldKey *string
+	err := r.withAuditTx(ctx, auth, func(tx pgx.Tx) error {
+		return tx.QueryRow(ctx, "SELECT heroes.upsert_hero_avatar($1, $2)", heroID, avatarKey).Scan(&oldKey)
 	})
+	if err != nil {
+		return nil, err
+	}
+	return oldKey, nil
 }
 
-func (r *repository) DeleteHeroAvatar(ctx context.Context, auth AuthContext, heroID int64) error {
-	return r.withAuditTx(ctx, auth, func(tx pgx.Tx) error {
-		_, err := tx.Exec(ctx, "SELECT heroes.delete_hero_avatar($1)", heroID)
-		return err
+func (r *repository) DeleteHeroAvatar(ctx context.Context, auth AuthContext, heroID int64) (*string, error) {
+	var oldKey *string
+	err := r.withAuditTx(ctx, auth, func(tx pgx.Tx) error {
+		return tx.QueryRow(ctx, "SELECT heroes.delete_hero_avatar($1)", heroID).Scan(&oldKey)
 	})
+	if err != nil {
+		return nil, err
+	}
+	return oldKey, nil
 }

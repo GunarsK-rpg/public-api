@@ -119,6 +119,11 @@ tasks:
     cmds:
       - govulncheck ./...
 
+  ineffassign:
+    desc: Check for ineffective assignments
+    cmds:
+      - ineffassign ./...
+
   # Linting
   lint:markdown:
     desc: Lint Markdown files
@@ -134,6 +139,7 @@ tasks:
       - task: lint
       - task: vet
       - task: test
+      - task: ineffassign
       - task: security:vuln
       - task: lint:markdown
       - echo "All CI checks passed!"

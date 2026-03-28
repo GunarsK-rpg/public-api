@@ -29,15 +29,15 @@ func (h *Handler) SetNpcAvatar(c *gin.Context) {
 
 	var req setAvatarRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		commonHandlers.RespondError(c, http.StatusBadRequest, err.Error())
+		commonHandlers.RespondError(c, http.StatusBadRequest, "avatarKey is required")
 		return
 	}
 
-	if err := h.repo.UpsertNpcAvatar(c.Request.Context(), auth, npcID, campaignID, req.AvatarKey); err != nil {
+	_, err = h.repo.UpsertNpcAvatar(c.Request.Context(), auth, npcID, campaignID, req.AvatarKey)
+	if err != nil {
 		HandlePgxError(c, err)
 		return
 	}
-
 	c.JSON(http.StatusOK, gin.H{"avatarKey": req.AvatarKey})
 }
 
@@ -61,10 +61,10 @@ func (h *Handler) DeleteNpcAvatar(c *gin.Context) {
 		return
 	}
 
-	if err := h.repo.DeleteNpcAvatar(c.Request.Context(), auth, npcID, campaignID); err != nil {
+	_, err = h.repo.DeleteNpcAvatar(c.Request.Context(), auth, npcID, campaignID)
+	if err != nil {
 		HandlePgxError(c, err)
 		return
 	}
-
 	c.Status(http.StatusNoContent)
 }
