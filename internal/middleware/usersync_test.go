@@ -93,8 +93,24 @@ func TestUserSync_CacheMiss_SyncsDB(t *testing.T) {
 
 	execCalled := false
 	mock := &mockDBExecer{
-		execFn: func(_ context.Context, _ string, _ ...any) (pgconn.CommandTag, error) {
+		execFn: func(_ context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
 			execCalled = true
+			expectedSQL := "SELECT auth.sync_user($1, $2, $3)"
+			if sql != expectedSQL {
+				t.Errorf("sql = %q, want %q", sql, expectedSQL)
+			}
+			if len(args) != 3 {
+				t.Fatalf("args len = %d, want 3", len(args))
+			}
+			if args[0] != int64(1) {
+				t.Errorf("args[0] = %v, want int64(1)", args[0])
+			}
+			if args[1] != "testuser" {
+				t.Errorf("args[1] = %v, want %q", args[1], "testuser")
+			}
+			if args[2] != (*string)(nil) {
+				t.Errorf("args[2] = %v, want nil *string (no display name)", args[2])
+			}
 			return pgconn.NewCommandTag("SELECT 1"), nil
 		},
 	}
@@ -173,5 +189,16 @@ func TestUserSync_DBFailure_Returns500(t *testing.T) {
 	}
 	if handlerCalled {
 		t.Error("handler should not be called on DB failure")
+	}
+
+	// Verify cache flag was NOT set after DB failure
+	claimsHash := fmt.Sprintf("%x", sha256.Sum256([]byte("testuser\x00")))[:12]
+	cacheKey := fmt.Sprintf("%s%d:%s", userSyncKeyPrefix, int64(1), claimsHash)
+	synced, err := appCache.HasFlag(context.Background(), cacheKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if synced {
+		t.Error("cache flag should not be set after DB failure")
 	}
 }

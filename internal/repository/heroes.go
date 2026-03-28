@@ -309,7 +309,10 @@ func (r *repository) UpsertHeroAvatar(ctx context.Context, auth AuthContext, her
 	err := r.withAuditTx(ctx, auth, func(tx pgx.Tx) error {
 		return tx.QueryRow(ctx, "SELECT heroes.upsert_hero_avatar($1, $2)", heroID, avatarKey).Scan(&oldKey)
 	})
-	return oldKey, err
+	if err != nil {
+		return nil, err
+	}
+	return oldKey, nil
 }
 
 func (r *repository) DeleteHeroAvatar(ctx context.Context, auth AuthContext, heroID int64) (*string, error) {
@@ -317,5 +320,8 @@ func (r *repository) DeleteHeroAvatar(ctx context.Context, auth AuthContext, her
 	err := r.withAuditTx(ctx, auth, func(tx pgx.Tx) error {
 		return tx.QueryRow(ctx, "SELECT heroes.delete_hero_avatar($1)", heroID).Scan(&oldKey)
 	})
-	return oldKey, err
+	if err != nil {
+		return nil, err
+	}
+	return oldKey, nil
 }

@@ -75,7 +75,10 @@ func (r *repository) UpsertNpcAvatar(ctx context.Context, auth AuthContext, npcI
 	err := r.withAuditTx(ctx, auth, func(tx pgx.Tx) error {
 		return tx.QueryRow(ctx, "SELECT combat.upsert_npc_avatar($1, $2, $3)", npcID, campaignID, avatarKey).Scan(&oldKey)
 	})
-	return oldKey, err
+	if err != nil {
+		return nil, err
+	}
+	return oldKey, nil
 }
 
 func (r *repository) DeleteNpcAvatar(ctx context.Context, auth AuthContext, npcID int64, campaignID int64) (*string, error) {
@@ -83,7 +86,10 @@ func (r *repository) DeleteNpcAvatar(ctx context.Context, auth AuthContext, npcI
 	err := r.withAuditTx(ctx, auth, func(tx pgx.Tx) error {
 		return tx.QueryRow(ctx, "SELECT combat.delete_npc_avatar($1, $2)", npcID, campaignID).Scan(&oldKey)
 	})
-	return oldKey, err
+	if err != nil {
+		return nil, err
+	}
+	return oldKey, nil
 }
 
 // Combats
