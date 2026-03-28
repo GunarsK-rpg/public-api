@@ -79,7 +79,10 @@ func main() {
 	)
 	router.Use(securityMiddleware.Apply())
 
-	routes.Setup(router, handler, cfg, healthAgg, pool, appCache)
+	if err := routes.Setup(router, handler, cfg, healthAgg, pool, appCache); err != nil {
+		appLogger.Error("Failed to setup routes", "error", err)
+		os.Exit(1)
+	}
 
 	appLogger.Info("Public API ready", "port", cfg.Service.Port)
 	serverCfg := server.DefaultConfig(strconv.Itoa(cfg.Service.Port))
