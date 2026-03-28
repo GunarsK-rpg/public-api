@@ -73,7 +73,7 @@ func main() {
 
 	securityMiddleware := middleware.NewSecurityMiddleware(
 		cfg.Service.AllowedOrigins,
-		"GET,POST,PUT,DELETE,OPTIONS",
+		"GET,POST,PUT,PATCH,DELETE,OPTIONS",
 		"Content-Type,Authorization",
 		true,
 	)
