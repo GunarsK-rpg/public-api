@@ -205,7 +205,18 @@ jobs:
           base: ""
           head: ${{ github.ref }}
 
-  # Job 7: Check for common issues
+  # Job 7: Markdown Lint
+  markdown-lint:
+    name: Markdown Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Markdown Lint
+        uses: DavidAnson/markdownlint-cli2-action@v23
+
+  # Job 8: Check for common issues
   code-quality:
     name: Code Quality Checks
     runs-on: ubuntu-latest
@@ -249,6 +260,7 @@ jobs:
         docker-build-and-scan,
         security-analysis,
         secret-scan,
+        markdown-lint,
         code-quality,
       ]
     if: always()
