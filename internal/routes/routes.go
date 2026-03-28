@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -19,7 +19,7 @@ import (
 )
 
 // Setup configures all routes for the service.
-func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, healthAgg *health.Aggregator, pool *pgxpool.Pool, appCache *cache.Cache) {
+func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, healthAgg *health.Aggregator, pool *pgxpool.Pool, appCache *cache.Cache) error {
 	// Public endpoints (no auth)
 	router.GET("/health", healthAgg.Handler())
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
@@ -27,7 +27,7 @@ func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, he
 	// Setup JWT validator and auth middleware
 	jwtService, err := jwt.NewValidatorOnly(cfg.JWTSecret)
 	if err != nil {
-		log.Fatalf("failed to create JWT validator: %v", err)
+		return fmt.Errorf("failed to create JWT validator: %w", err)
 	}
 	authMiddleware := commonMiddleware.NewAuthMiddleware(jwtService)
 
@@ -143,6 +143,8 @@ func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, he
 		instances.PATCH("/:id", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelEdit), handler.PatchNpcInstance)
 		instances.DELETE("/:id", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelDelete), handler.DeleteNpcInstance)
 	}
+
+	return nil
 }
 
 // registerHeroSubResource registers GET/POST/DELETE routes for a hero sub-resource.
