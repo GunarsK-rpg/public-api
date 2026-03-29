@@ -162,6 +162,7 @@ func TestHandlePgxError_PgCodes(t *testing.T) {
 		{"no_data_found", "P0002", http.StatusNotFound, "not found"},
 		{"insufficient_privilege", "42501", http.StatusForbidden, "access denied"},
 		{"invalid_parameter_value", "22023", http.StatusBadRequest, "invalid parameter value"},
+		{"string_data_right_truncation", "22001", http.StatusBadRequest, "value too long"},
 		{"raise_exception", "P0001", http.StatusBadRequest, "test error"},
 	}
 
