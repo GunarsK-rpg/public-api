@@ -39,6 +39,9 @@ func HandlePgxError(c *gin.Context, err error) {
 		case "22023": // invalid_parameter_value
 			commonHandlers.LogAndRespondError(c, http.StatusBadRequest, err, "invalid parameter value")
 			return
+		case "22001": // string_data_right_truncation
+			commonHandlers.LogAndRespondError(c, http.StatusBadRequest, err, "value too long")
+			return
 		case "P0001": // raise_exception (validation errors)
 			commonHandlers.LogAndRespondError(c, http.StatusBadRequest, err, pgErr.Message)
 			return
