@@ -94,12 +94,13 @@ jobs:
       - name: Run govulncheck
         run: govulncheck ./...
 
-  # Job 4: Build Docker image and scan for vulnerabilities
-  docker-build-and-scan:
-    name: Docker Build & Security Scan
+  # Job 4: Build Docker image, publish to ghcr.io, and scan
+  docker-publish-scan:
+    name: Docker Publish & Scan
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      packages: write
       security-events: write
     steps:
       - name: Checkout code
@@ -108,21 +109,38 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: Set image name (lowercase)
-        id: image
-        run: echo "name=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set image metadata
+        id: meta
+        run: |
+          IMAGE="ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')"
+          echo "image=$IMAGE" >> $GITHUB_OUTPUT
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            TAG="pr-${{ github.event.pull_request.number }}"
+            echo "tags=$IMAGE:$TAG" >> $GITHUB_OUTPUT
+          else
+            SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+            echo "tags=$IMAGE:latest,$IMAGE:sha-$SHORT_SHA" >> $GITHUB_OUTPUT
+            TAG="latest"
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
 
       - name: Get weekly cache key
         id: week
         run: echo "key=$(date +%Y-W%V)" >> "$GITHUB_OUTPUT"
 
-      - name: Build Docker image
+      - name: Build and push Docker image
         uses: docker/build-push-action@v7
         with:
           context: .
-          push: false
-          load: true
-          tags: ${{ steps.image.outputs.name }}:${{ github.sha }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
           build-args: |
             CACHE_BUST=${{ steps.week.outputs.key }}
           cache-from: type=gha
@@ -131,7 +149,7 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.35.0
         with:
-          image-ref: ${{ steps.image.outputs.name }}:${{ github.sha }}
+          image-ref: ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.tag }}
           format: "sarif"
           output: "trivy-results.sarif"
           severity: "CRITICAL,HIGH"
@@ -148,10 +166,20 @@ jobs:
         uses: aquasecurity/trivy-action@0.35.0
         if: always()
         with:
-          image-ref: ${{ steps.image.outputs.name }}:${{ github.sha }}
+          image-ref: ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.tag }}
           format: "table"
           severity: "CRITICAL,HIGH,MEDIUM"
           version: "v0.69.3"
+
+  # E2E Tests (only on PRs, after image is published)
+  e2e:
+    name: E2E Tests
+    needs: [docker-publish-scan]
+    if: github.event_name == 'pull_request'
+    uses: GunarsK-rpg/e2e-tests/.github/workflows/e2e-run.yml@main
+    with:
+      trigger-image-tag: pr-${{ github.event.pull_request.number }}
+    secrets: inherit
 
   # Job 5: Static analysis with gosec
   security-analysis:
@@ -257,7 +285,7 @@ jobs:
         lint,
         test,
         vulnerability-scan,
-        docker-build-and-scan,
+        docker-publish-scan,
         security-analysis,
         secret-scan,
         markdown-lint,
