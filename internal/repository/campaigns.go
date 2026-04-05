@@ -13,6 +13,7 @@ type CampaignRepository interface {
 	UpsertCampaign(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 	DeleteCampaign(ctx context.Context, auth AuthContext, id int64) (bool, error)
 	RemoveHeroFromCampaign(ctx context.Context, auth AuthContext, heroID int64, campaignID int64) (bool, error)
+	GetCampaignSourceBookIDs(ctx context.Context, auth AuthContext, campaignID int64) ([]int64, error)
 }
 
 func (r *repository) GetCampaigns(ctx context.Context, auth AuthContext) (json.RawMessage, error) {
@@ -37,4 +38,16 @@ func (r *repository) DeleteCampaign(ctx context.Context, auth AuthContext, id in
 
 func (r *repository) RemoveHeroFromCampaign(ctx context.Context, auth AuthContext, heroID int64, campaignID int64) (bool, error) {
 	return r.execFunc(ctx, auth, "SELECT campaign.remove_hero_from_campaign($1, $2)", heroID, campaignID)
+}
+
+func (r *repository) GetCampaignSourceBookIDs(ctx context.Context, auth AuthContext, campaignID int64) ([]int64, error) {
+	raw, err := r.callFunc(ctx, auth, "SELECT campaign.get_campaign_source_book_ids($1)", campaignID)
+	if err != nil {
+		return nil, err
+	}
+	var ids []int64
+	if err := json.Unmarshal(raw, &ids); err != nil {
+		return nil, err
+	}
+	return ids, nil
 }

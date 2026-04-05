@@ -12,8 +12,9 @@ import (
 // Each method delegates to a function field; returns "not implemented" if nil.
 type mockRepo struct {
 	// Classifiers
-	getAllClassifiersFunc func(ctx context.Context, auth repository.AuthContext) (json.RawMessage, error)
-	getSourceBooksFunc    func(ctx context.Context, auth repository.AuthContext) (json.RawMessage, error)
+	getClassifiersFilteredFunc func(ctx context.Context, auth repository.AuthContext, filter json.RawMessage) (json.RawMessage, error)
+	getSourceBooksFunc         func(ctx context.Context, auth repository.AuthContext) (json.RawMessage, error)
+	validateHeroAccessFunc     func(ctx context.Context, auth repository.AuthContext, heroID int64) error
 
 	// Heroes - Core CRUD
 	getHeroesFunc    func(ctx context.Context, auth repository.AuthContext, campaignID *int64) (json.RawMessage, error)
@@ -86,12 +87,13 @@ type mockRepo struct {
 	deleteHeroCultureFunc     func(ctx context.Context, auth repository.AuthContext, id int64) (bool, error)
 
 	// Campaigns
-	getCampaignsFunc           func(ctx context.Context, auth repository.AuthContext) (json.RawMessage, error)
-	getCampaignFunc            func(ctx context.Context, auth repository.AuthContext, id int64) (json.RawMessage, error)
-	getCampaignByCodeFunc      func(ctx context.Context, auth repository.AuthContext, code string) (json.RawMessage, error)
-	upsertCampaignFunc         func(ctx context.Context, auth repository.AuthContext, data json.RawMessage) (json.RawMessage, error)
-	deleteCampaignFunc         func(ctx context.Context, auth repository.AuthContext, id int64) (bool, error)
-	removeHeroFromCampaignFunc func(ctx context.Context, auth repository.AuthContext, heroID int64, campaignID int64) (bool, error)
+	getCampaignsFunc             func(ctx context.Context, auth repository.AuthContext) (json.RawMessage, error)
+	getCampaignFunc              func(ctx context.Context, auth repository.AuthContext, id int64) (json.RawMessage, error)
+	getCampaignByCodeFunc        func(ctx context.Context, auth repository.AuthContext, code string) (json.RawMessage, error)
+	upsertCampaignFunc           func(ctx context.Context, auth repository.AuthContext, data json.RawMessage) (json.RawMessage, error)
+	deleteCampaignFunc           func(ctx context.Context, auth repository.AuthContext, id int64) (bool, error)
+	removeHeroFromCampaignFunc   func(ctx context.Context, auth repository.AuthContext, heroID int64, campaignID int64) (bool, error)
+	getCampaignSourceBookIDsFunc func(ctx context.Context, auth repository.AuthContext, campaignID int64) ([]int64, error)
 
 	// Combat - NPCs
 	getNpcOptionsFunc   func(ctx context.Context, auth repository.AuthContext, campaignID int64) (json.RawMessage, error)
@@ -127,9 +129,9 @@ var errNotImplemented = errors.New("not implemented")
 // Classifiers
 // =============================================================================
 
-func (m *mockRepo) GetAllClassifiers(ctx context.Context, auth repository.AuthContext) (json.RawMessage, error) {
-	if m.getAllClassifiersFunc != nil {
-		return m.getAllClassifiersFunc(ctx, auth)
+func (m *mockRepo) GetClassifiersFiltered(ctx context.Context, auth repository.AuthContext, filter json.RawMessage) (json.RawMessage, error) {
+	if m.getClassifiersFilteredFunc != nil {
+		return m.getClassifiersFilteredFunc(ctx, auth, filter)
 	}
 	return nil, errNotImplemented
 }
@@ -139,6 +141,13 @@ func (m *mockRepo) GetSourceBooks(ctx context.Context, auth repository.AuthConte
 		return m.getSourceBooksFunc(ctx, auth)
 	}
 	return nil, errNotImplemented
+}
+
+func (m *mockRepo) ValidateHeroAccess(ctx context.Context, auth repository.AuthContext, heroID int64) error {
+	if m.validateHeroAccessFunc != nil {
+		return m.validateHeroAccessFunc(ctx, auth, heroID)
+	}
+	return nil
 }
 
 // =============================================================================
@@ -595,6 +604,13 @@ func (m *mockRepo) RemoveHeroFromCampaign(ctx context.Context, auth repository.A
 		return m.removeHeroFromCampaignFunc(ctx, auth, heroID, campaignID)
 	}
 	return false, errNotImplemented
+}
+
+func (m *mockRepo) GetCampaignSourceBookIDs(ctx context.Context, auth repository.AuthContext, campaignID int64) ([]int64, error) {
+	if m.getCampaignSourceBookIDsFunc != nil {
+		return m.getCampaignSourceBookIDsFunc(ctx, auth, campaignID)
+	}
+	return nil, errNotImplemented
 }
 
 // =============================================================================

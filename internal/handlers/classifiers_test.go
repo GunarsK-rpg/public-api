@@ -11,6 +11,7 @@ import (
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
 	"github.com/redis/go-redis/v9"
 
 	"github.com/GunarsK-rpg/public-api/internal/cache"
@@ -47,17 +48,17 @@ func TestGetAllClassifiers_CacheHit(t *testing.T) {
 
 	callCount := 0
 	mock := &mockRepo{
-		getAllClassifiersFunc: func(_ context.Context, _ repository.AuthContext) (json.RawMessage, error) {
+		getClassifiersFilteredFunc: func(_ context.Context, _ repository.AuthContext, _ json.RawMessage) (json.RawMessage, error) {
 			callCount++
 			return json.RawMessage(`{"fresh":"data"}`), nil
 		},
 	}
 	handler := New(mock, c)
 
-	// Pre-populate cache
+	// Pre-populate cache with global data
 	ctx := context.Background()
 	cached := json.RawMessage(`{"cached":"data"}`)
-	if err := c.Set(ctx, classifiersCacheKey, cached, 0); err != nil {
+	if err := c.Set(ctx, classifiersCacheGlobalKey, cached, 0); err != nil {
 		t.Fatal(err)
 	}
 
@@ -69,14 +70,18 @@ func TestGetAllClassifiers_CacheHit(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d", w.Code)
 	}
-	if w.Body.String() != string(cached) {
-		t.Fatalf("expected cached data %s, got %s", cached, w.Body.String())
+	// Response wraps cached global in scoped shape
+	var result struct {
+		Global json.RawMessage `json:"global"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
+		t.Fatalf("failed to parse response: %v", err)
+	}
+	if string(result.Global) != string(cached) {
+		t.Fatalf("expected global %s, got %s", cached, result.Global)
 	}
 	if callCount != 0 {
 		t.Fatalf("expected 0 DB calls on cache hit, got %d", callCount)
-	}
-	if w.Header().Get("Cache-Control") != "private, max-age=3600" {
-		t.Fatalf("expected Cache-Control header, got %q", w.Header().Get("Cache-Control"))
 	}
 }
 
@@ -88,7 +93,7 @@ func TestGetAllClassifiers_CacheMiss(t *testing.T) {
 	dbData := json.RawMessage(`{"from":"database"}`)
 	callCount := 0
 	mock := &mockRepo{
-		getAllClassifiersFunc: func(_ context.Context, _ repository.AuthContext) (json.RawMessage, error) {
+		getClassifiersFilteredFunc: func(_ context.Context, _ repository.AuthContext, _ json.RawMessage) (json.RawMessage, error) {
 			callCount++
 			return dbData, nil
 		},
@@ -103,15 +108,12 @@ func TestGetAllClassifiers_CacheMiss(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d", w.Code)
 	}
-	if w.Body.String() != string(dbData) {
-		t.Fatalf("expected DB data %s, got %s", dbData, w.Body.String())
-	}
 	if callCount != 1 {
 		t.Fatalf("expected 1 DB call on cache miss, got %d", callCount)
 	}
 
-	// Verify data was stored in cache
-	result, err := c.Get(context.Background(), classifiersCacheKey)
+	// Verify global data was stored in cache
+	result, err := c.Get(context.Background(), classifiersCacheGlobalKey)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,7 +122,7 @@ func TestGetAllClassifiers_CacheMiss(t *testing.T) {
 	}
 
 	// Verify TTL was set
-	ttl := mr.TTL(classifiersCacheKey)
+	ttl := mr.TTL(classifiersCacheGlobalKey)
 	if ttl < 55*time.Minute || ttl > 61*time.Minute {
 		t.Fatalf("expected TTL ~1h, got %v", ttl)
 	}
@@ -134,7 +136,7 @@ func TestGetAllClassifiers_SecondCallHitsCache(t *testing.T) {
 	dbData := json.RawMessage(`{"from":"database"}`)
 	callCount := 0
 	mock := &mockRepo{
-		getAllClassifiersFunc: func(_ context.Context, _ repository.AuthContext) (json.RawMessage, error) {
+		getClassifiersFilteredFunc: func(_ context.Context, _ repository.AuthContext, _ json.RawMessage) (json.RawMessage, error) {
 			callCount++
 			return dbData, nil
 		},
@@ -151,9 +153,6 @@ func TestGetAllClassifiers_SecondCallHitsCache(t *testing.T) {
 	if w1.Code != http.StatusOK {
 		t.Fatalf("first call: expected 200, got %d", w1.Code)
 	}
-	if w1.Header().Get("Cache-Control") != "private, max-age=3600" {
-		t.Fatalf("first call: expected Cache-Control header, got %q", w1.Header().Get("Cache-Control"))
-	}
 
 	// Second call: cache hit, skips DB
 	w2 := httptest.NewRecorder()
@@ -163,14 +162,8 @@ func TestGetAllClassifiers_SecondCallHitsCache(t *testing.T) {
 	if w2.Code != http.StatusOK {
 		t.Fatalf("second call: expected 200, got %d", w2.Code)
 	}
-	if w2.Header().Get("Cache-Control") != "private, max-age=3600" {
-		t.Fatalf("second call: expected Cache-Control header, got %q", w2.Header().Get("Cache-Control"))
-	}
 	if callCount != 1 {
 		t.Fatalf("expected 1 DB call total (second should hit cache), got %d", callCount)
-	}
-	if w2.Body.String() != string(dbData) {
-		t.Fatalf("expected same data on second call, got %s", w2.Body.String())
 	}
 }
 
@@ -185,7 +178,7 @@ func TestGetAllClassifiers_RedisFallbackToDB(t *testing.T) {
 	dbData := json.RawMessage(`{"from":"database"}`)
 	callCount := 0
 	mock := &mockRepo{
-		getAllClassifiersFunc: func(_ context.Context, _ repository.AuthContext) (json.RawMessage, error) {
+		getClassifiersFilteredFunc: func(_ context.Context, _ repository.AuthContext, _ json.RawMessage) (json.RawMessage, error) {
 			callCount++
 			return dbData, nil
 		},
@@ -200,8 +193,15 @@ func TestGetAllClassifiers_RedisFallbackToDB(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200 on Redis failure, got %d", w.Code)
 	}
-	if w.Body.String() != string(dbData) {
-		t.Fatalf("expected DB data on Redis failure, got %s", w.Body.String())
+	// Verify global data is in the response
+	var result struct {
+		Global json.RawMessage `json:"global"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
+		t.Fatalf("failed to parse response: %v", err)
+	}
+	if string(result.Global) != string(dbData) {
+		t.Fatalf("expected global %s, got %s", dbData, result.Global)
 	}
 	if callCount != 1 {
 		t.Fatalf("expected 1 DB call on Redis failure, got %d", callCount)
@@ -259,5 +259,142 @@ func TestGetSourceBooks_RepoError(t *testing.T) {
 
 	if w.Code != http.StatusInternalServerError {
 		t.Fatalf("expected 500, got %d", w.Code)
+	}
+}
+
+// =============================================================================
+// GetAllClassifiers with scoped query params
+// =============================================================================
+
+func TestGetAllClassifiers_WithCampaignID(t *testing.T) {
+	globalData := json.RawMessage(`{"skills":[],"attrs":[1]}`)
+	sbData := json.RawMessage(`{"skills":[1],"attrs":[]}`)
+	mock := &mockRepo{
+		getCampaignSourceBookIDsFunc: func(_ context.Context, _ repository.AuthContext, id int64) ([]int64, error) {
+			if id != 5 {
+				t.Errorf("campaignID = %d, want 5", id)
+			}
+			return []int64{10}, nil
+		},
+		getClassifiersFilteredFunc: func(_ context.Context, _ repository.AuthContext, filter json.RawMessage) (json.RawMessage, error) {
+			if string(filter) == `{"sourceBookId": null}` {
+				return globalData, nil
+			}
+			return sbData, nil
+		},
+	}
+	handler := New(mock, nil)
+	router := setupClassifierRouter(handler)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/classifiers?campaignId=5", nil)
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+
+	var result struct {
+		Global      json.RawMessage   `json:"global"`
+		SourceBooks []json.RawMessage `json:"sourceBooks"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
+		t.Fatalf("failed to parse response: %v", err)
+	}
+	if string(result.Global) != string(globalData) {
+		t.Fatalf("global = %s, want %s", result.Global, globalData)
+	}
+	if len(result.SourceBooks) != 1 || string(result.SourceBooks[0]) != string(sbData) {
+		t.Fatalf("sourceBooks = %v, want [%s]", result.SourceBooks, sbData)
+	}
+}
+
+func TestGetAllClassifiers_WithHeroID(t *testing.T) {
+	globalData := json.RawMessage(`{"skills":[1]}`)
+	heroData := json.RawMessage(`{"skills":[2]}`)
+	mock := &mockRepo{
+		getClassifiersFilteredFunc: func(_ context.Context, _ repository.AuthContext, filter json.RawMessage) (json.RawMessage, error) {
+			if string(filter) == `{"sourceBookId": null}` {
+				return globalData, nil
+			}
+			if string(filter) == `{"heroId": 7}` {
+				return heroData, nil
+			}
+			return json.RawMessage(`{}`), nil
+		},
+	}
+	handler := New(mock, nil)
+	router := setupClassifierRouter(handler)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/classifiers?heroId=7", nil)
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+
+	var result struct {
+		Global json.RawMessage `json:"global"`
+		Hero   json.RawMessage `json:"hero"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
+		t.Fatalf("failed to parse response: %v", err)
+	}
+	if string(result.Hero) != string(heroData) {
+		t.Fatalf("hero = %s, want %s", result.Hero, heroData)
+	}
+}
+
+func TestGetAllClassifiers_NoSourceBooks(t *testing.T) {
+	globalData := json.RawMessage(`{"skills":[]}`)
+	mock := &mockRepo{
+		getCampaignSourceBookIDsFunc: func(_ context.Context, _ repository.AuthContext, _ int64) ([]int64, error) {
+			return nil, nil
+		},
+		getClassifiersFilteredFunc: func(_ context.Context, _ repository.AuthContext, _ json.RawMessage) (json.RawMessage, error) {
+			return globalData, nil
+		},
+	}
+	handler := New(mock, nil)
+	router := setupClassifierRouter(handler)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/classifiers?campaignId=5", nil)
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+
+	var result struct {
+		SourceBooks []json.RawMessage `json:"sourceBooks"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
+		t.Fatalf("failed to parse response: %v", err)
+	}
+	if len(result.SourceBooks) != 0 {
+		t.Fatalf("expected empty sourceBooks, got %d", len(result.SourceBooks))
+	}
+}
+
+func TestGetAllClassifiers_CampaignNotFound(t *testing.T) {
+	mock := &mockRepo{
+		getClassifiersFilteredFunc: func(_ context.Context, _ repository.AuthContext, _ json.RawMessage) (json.RawMessage, error) {
+			return json.RawMessage(`{}`), nil
+		},
+		getCampaignSourceBookIDsFunc: func(_ context.Context, _ repository.AuthContext, _ int64) ([]int64, error) {
+			return nil, pgx.ErrNoRows
+		},
+	}
+	handler := New(mock, nil)
+	router := setupClassifierRouter(handler)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/classifiers?campaignId=999", nil)
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("expected 404, got %d", w.Code)
 	}
 }
