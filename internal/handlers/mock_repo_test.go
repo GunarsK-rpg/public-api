@@ -13,6 +13,7 @@ import (
 type mockRepo struct {
 	// Classifiers
 	getAllClassifiersFunc func(ctx context.Context, auth repository.AuthContext) (json.RawMessage, error)
+	getSourceBooksFunc    func(ctx context.Context, auth repository.AuthContext) (json.RawMessage, error)
 
 	// Heroes - Core CRUD
 	getHeroesFunc    func(ctx context.Context, auth repository.AuthContext, campaignID *int64) (json.RawMessage, error)
@@ -129,6 +130,13 @@ var errNotImplemented = errors.New("not implemented")
 func (m *mockRepo) GetAllClassifiers(ctx context.Context, auth repository.AuthContext) (json.RawMessage, error) {
 	if m.getAllClassifiersFunc != nil {
 		return m.getAllClassifiersFunc(ctx, auth)
+	}
+	return nil, errNotImplemented
+}
+
+func (m *mockRepo) GetSourceBooks(ctx context.Context, auth repository.AuthContext) (json.RawMessage, error) {
+	if m.getSourceBooksFunc != nil {
+		return m.getSourceBooksFunc(ctx, auth)
 	}
 	return nil, errNotImplemented
 }
