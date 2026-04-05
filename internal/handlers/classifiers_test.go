@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -24,6 +25,18 @@ func setupClassifierRouter(handler *Handler) *gin.Engine {
 		c.Set("username", "testuser")
 		c.Next()
 	}, handler.GetAllClassifiers)
+	r.GET("/classifiers/source-books", func(c *gin.Context) {
+		c.Set("user_id", int64(1))
+		c.Set("username", "testuser")
+		c.Next()
+	}, handler.GetSourceBooks)
+	return r
+}
+
+func setupClassifierRouterNoAuth(handler *Handler) *gin.Engine {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.GET("/classifiers/source-books", handler.GetSourceBooks)
 	return r
 }
 
@@ -192,5 +205,59 @@ func TestGetAllClassifiers_RedisFallbackToDB(t *testing.T) {
 	}
 	if callCount != 1 {
 		t.Fatalf("expected 1 DB call on Redis failure, got %d", callCount)
+	}
+}
+
+func TestGetSourceBooks_Success(t *testing.T) {
+	dbData := json.RawMessage(`[{"id":1,"name":"Stormlight RPG"}]`)
+	mock := &mockRepo{
+		getSourceBooksFunc: func(_ context.Context, _ repository.AuthContext) (json.RawMessage, error) {
+			return dbData, nil
+		},
+	}
+	handler := New(mock, nil)
+	router := setupClassifierRouter(handler)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/classifiers/source-books", nil)
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+	if w.Body.String() != string(dbData) {
+		t.Fatalf("expected %s, got %s", dbData, w.Body.String())
+	}
+}
+
+func TestGetSourceBooks_NoAuth(t *testing.T) {
+	mock := &mockRepo{}
+	handler := New(mock, nil)
+	router := setupClassifierRouterNoAuth(handler)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/classifiers/source-books", nil)
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d", w.Code)
+	}
+}
+
+func TestGetSourceBooks_RepoError(t *testing.T) {
+	mock := &mockRepo{
+		getSourceBooksFunc: func(_ context.Context, _ repository.AuthContext) (json.RawMessage, error) {
+			return nil, errors.New("db error")
+		},
+	}
+	handler := New(mock, nil)
+	router := setupClassifierRouter(handler)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/classifiers/source-books", nil)
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Fatalf("expected 500, got %d", w.Code)
 	}
 }
