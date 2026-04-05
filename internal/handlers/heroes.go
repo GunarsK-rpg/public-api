@@ -24,6 +24,10 @@ func (h *Handler) GetHeroes(c *gin.Context) {
 		commonHandlers.RespondError(c, http.StatusBadRequest, "invalid query parameters")
 		return
 	}
+	if err := query.Validate(); err != nil {
+		commonHandlers.RespondError(c, http.StatusBadRequest, err.Error())
+		return
+	}
 
 	result, err := h.repo.GetHeroes(c.Request.Context(), auth, query.CampaignID)
 	if err != nil {

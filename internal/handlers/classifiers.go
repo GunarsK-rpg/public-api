@@ -35,6 +35,10 @@ func (h *Handler) GetAllClassifiers(c *gin.Context) {
 		commonHandlers.RespondError(c, http.StatusBadRequest, "invalid query parameters")
 		return
 	}
+	if err := query.Validate(); err != nil {
+		commonHandlers.RespondError(c, http.StatusBadRequest, err.Error())
+		return
+	}
 
 	// Always fetch global classifiers (unscoped + global scoped)
 	global, err := h.fetchClassifiers(c, classifiersCacheGlobalKey, `{"sourceBookId": null}`)
