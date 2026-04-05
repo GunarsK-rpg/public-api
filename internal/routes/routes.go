@@ -43,6 +43,7 @@ func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, he
 	classifiers.Use(commonMiddleware.RequirePermission(constants.ResourceClassifiers, commonMiddleware.LevelRead))
 	{
 		classifiers.GET("", handler.GetAllClassifiers)
+		classifiers.GET("/source-books", handler.GetSourceBooks)
 	}
 
 	// Heroes routes

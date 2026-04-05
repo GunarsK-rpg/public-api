@@ -15,6 +15,11 @@ const (
 	classifiersCacheTTL = 1 * time.Hour
 )
 
+// GetSourceBooks returns source books visible to the current user.
+func (h *Handler) GetSourceBooks(c *gin.Context) {
+	handleGet(c, h.repo.GetSourceBooks)
+}
+
 // GetAllClassifiers returns all classifiers in a single batch call.
 func (h *Handler) GetAllClassifiers(c *gin.Context) {
 	ctx := c.Request.Context()
