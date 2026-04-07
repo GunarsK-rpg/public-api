@@ -525,6 +525,81 @@ func TestAddFavoriteAction_Success(t *testing.T) {
 	}
 }
 
+// =============================================================================
+// Hero path handlers
+// =============================================================================
+
+func TestGetHeroPaths_Success(t *testing.T) {
+	mock := &mockRepo{}
+	handler := New(mock, nil)
+	router := gin.New()
+	router.GET("/heroes/:id/paths", func(c *gin.Context) {
+		withAuth(c)
+		handler.GetHeroPaths(c)
+	})
+
+	expected := json.RawMessage(`[{"id":1,"pathCode":"windrunner"}]`)
+	mock.getHeroPathsFunc = func(_ context.Context, _ repository.AuthContext, heroID int64) (json.RawMessage, error) {
+		if heroID != 1 {
+			t.Errorf("heroID = %d, want 1", heroID)
+		}
+		return expected, nil
+	}
+
+	w := performRequest(t, router, "GET", "/heroes/1/paths", nil)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	if w.Body.String() != string(expected) {
+		t.Errorf("body = %s, want %s", w.Body.String(), expected)
+	}
+}
+
+func TestUpsertHeroPath_Success(t *testing.T) {
+	mock := &mockRepo{}
+	handler := New(mock, nil)
+	router := gin.New()
+	router.POST("/heroes/:id/paths", func(c *gin.Context) {
+		withAuth(c)
+		handler.UpsertHeroPath(c)
+	})
+
+	expected := json.RawMessage(`{"id":1}`)
+	mock.upsertHeroPathFunc = func(_ context.Context, _ repository.AuthContext, _ json.RawMessage) (json.RawMessage, error) {
+		return expected, nil
+	}
+
+	w := performRequest(t, router, "POST", "/heroes/1/paths", []byte(`{"heroId":1,"pathCode":"windrunner"}`))
+
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestDeleteHeroPath_Success(t *testing.T) {
+	mock := &mockRepo{}
+	handler := New(mock, nil)
+	router := gin.New()
+	router.DELETE("/heroes/:id/paths/:subId", func(c *gin.Context) {
+		withAuth(c)
+		handler.DeleteHeroPath(c)
+	})
+
+	mock.deleteHeroPathFunc = func(_ context.Context, _ repository.AuthContext, id int64) (bool, error) {
+		if id != 5 {
+			t.Errorf("id = %d, want 5", id)
+		}
+		return true, nil
+	}
+
+	w := performRequest(t, router, "DELETE", "/heroes/1/paths/5", nil)
+
+	if w.Code != http.StatusNoContent {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusNoContent)
+	}
+}
+
 func TestRemoveFavoriteAction_Success(t *testing.T) {
 	mock := &mockRepo{}
 	handler := New(mock, nil)
