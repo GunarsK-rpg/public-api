@@ -525,6 +525,29 @@ func TestAddFavoriteAction_Success(t *testing.T) {
 	}
 }
 
+func TestRemoveFavoriteAction_Success(t *testing.T) {
+	mock := &mockRepo{}
+	handler := New(mock, nil)
+	router := gin.New()
+	router.DELETE("/heroes/:id/favorites/:subId", func(c *gin.Context) {
+		withAuth(c)
+		handler.RemoveFavoriteAction(c)
+	})
+
+	mock.removeFavoriteActionFunc = func(_ context.Context, _ repository.AuthContext, id int64) (bool, error) {
+		if id != 3 {
+			t.Errorf("id = %d, want 3", id)
+		}
+		return true, nil
+	}
+
+	w := performRequest(t, router, "DELETE", "/heroes/1/favorites/3", nil)
+
+	if w.Code != http.StatusNoContent {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusNoContent)
+	}
+}
+
 // =============================================================================
 // Hero path handlers
 // =============================================================================
@@ -594,29 +617,6 @@ func TestDeleteHeroPath_Success(t *testing.T) {
 	}
 
 	w := performRequest(t, router, "DELETE", "/heroes/1/paths/5", nil)
-
-	if w.Code != http.StatusNoContent {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNoContent)
-	}
-}
-
-func TestRemoveFavoriteAction_Success(t *testing.T) {
-	mock := &mockRepo{}
-	handler := New(mock, nil)
-	router := gin.New()
-	router.DELETE("/heroes/:id/favorites/:subId", func(c *gin.Context) {
-		withAuth(c)
-		handler.RemoveFavoriteAction(c)
-	})
-
-	mock.removeFavoriteActionFunc = func(_ context.Context, _ repository.AuthContext, id int64) (bool, error) {
-		if id != 3 {
-			t.Errorf("id = %d, want 3", id)
-		}
-		return true, nil
-	}
-
-	w := performRequest(t, router, "DELETE", "/heroes/1/favorites/3", nil)
 
 	if w.Code != http.StatusNoContent {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusNoContent)
