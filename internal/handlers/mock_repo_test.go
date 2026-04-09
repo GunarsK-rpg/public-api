@@ -23,6 +23,11 @@ type mockRepo struct {
 	upsertHeroFunc   func(ctx context.Context, auth repository.AuthContext, data json.RawMessage) (json.RawMessage, error)
 	deleteHeroFunc   func(ctx context.Context, auth repository.AuthContext, id int64) (bool, error)
 
+	// Heroes - Paths
+	getHeroPathsFunc   func(ctx context.Context, auth repository.AuthContext, heroID int64) (json.RawMessage, error)
+	upsertHeroPathFunc func(ctx context.Context, auth repository.AuthContext, data json.RawMessage) (json.RawMessage, error)
+	deleteHeroPathFunc func(ctx context.Context, auth repository.AuthContext, id int64) (bool, error)
+
 	// Heroes - Sub-resource getters
 	getHeroAttributesFunc   func(ctx context.Context, auth repository.AuthContext, heroID int64) (json.RawMessage, error)
 	getHeroDefensesFunc     func(ctx context.Context, auth repository.AuthContext, heroID int64) (json.RawMessage, error)
@@ -54,10 +59,10 @@ type mockRepo struct {
 	upsertHeroCultureFunc     func(ctx context.Context, auth repository.AuthContext, data json.RawMessage) (json.RawMessage, error)
 
 	// Heroes - Resource patches
-	patchHeroHealthFunc      func(ctx context.Context, auth repository.AuthContext, data json.RawMessage) (json.RawMessage, error)
-	patchHeroFocusFunc       func(ctx context.Context, auth repository.AuthContext, data json.RawMessage) (json.RawMessage, error)
-	patchHeroInvestitureFunc func(ctx context.Context, auth repository.AuthContext, data json.RawMessage) (json.RawMessage, error)
-	patchHeroCurrencyFunc    func(ctx context.Context, auth repository.AuthContext, data json.RawMessage) (json.RawMessage, error)
+	patchHeroHealthFunc   func(ctx context.Context, auth repository.AuthContext, data json.RawMessage) (json.RawMessage, error)
+	patchHeroFocusFunc    func(ctx context.Context, auth repository.AuthContext, data json.RawMessage) (json.RawMessage, error)
+	patchHeroMagicFunc    func(ctx context.Context, auth repository.AuthContext, data json.RawMessage) (json.RawMessage, error)
+	patchHeroCurrencyFunc func(ctx context.Context, auth repository.AuthContext, data json.RawMessage) (json.RawMessage, error)
 
 	// Heroes - Equipment modifications
 	addEquipmentModificationFunc    func(ctx context.Context, auth repository.AuthContext, data json.RawMessage) (json.RawMessage, error)
@@ -185,6 +190,31 @@ func (m *mockRepo) UpsertHero(ctx context.Context, auth repository.AuthContext, 
 func (m *mockRepo) DeleteHero(ctx context.Context, auth repository.AuthContext, id int64) (bool, error) {
 	if m.deleteHeroFunc != nil {
 		return m.deleteHeroFunc(ctx, auth, id)
+	}
+	return false, errNotImplemented
+}
+
+// =============================================================================
+// Heroes - Paths
+// =============================================================================
+
+func (m *mockRepo) GetHeroPaths(ctx context.Context, auth repository.AuthContext, heroID int64) (json.RawMessage, error) {
+	if m.getHeroPathsFunc != nil {
+		return m.getHeroPathsFunc(ctx, auth, heroID)
+	}
+	return nil, errNotImplemented
+}
+
+func (m *mockRepo) UpsertHeroPath(ctx context.Context, auth repository.AuthContext, data json.RawMessage) (json.RawMessage, error) {
+	if m.upsertHeroPathFunc != nil {
+		return m.upsertHeroPathFunc(ctx, auth, data)
+	}
+	return nil, errNotImplemented
+}
+
+func (m *mockRepo) DeleteHeroPath(ctx context.Context, auth repository.AuthContext, id int64) (bool, error) {
+	if m.deleteHeroPathFunc != nil {
+		return m.deleteHeroPathFunc(ctx, auth, id)
 	}
 	return false, errNotImplemented
 }
@@ -397,9 +427,9 @@ func (m *mockRepo) PatchHeroFocus(ctx context.Context, auth repository.AuthConte
 	return nil, errNotImplemented
 }
 
-func (m *mockRepo) PatchHeroInvestiture(ctx context.Context, auth repository.AuthContext, data json.RawMessage) (json.RawMessage, error) {
-	if m.patchHeroInvestitureFunc != nil {
-		return m.patchHeroInvestitureFunc(ctx, auth, data)
+func (m *mockRepo) PatchHeroMagic(ctx context.Context, auth repository.AuthContext, data json.RawMessage) (json.RawMessage, error) {
+	if m.patchHeroMagicFunc != nil {
+		return m.patchHeroMagicFunc(ctx, auth, data)
 	}
 	return nil, errNotImplemented
 }

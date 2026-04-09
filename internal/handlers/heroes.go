@@ -165,6 +165,23 @@ func (h *Handler) DeleteHeroTalent(c *gin.Context) {
 	handleDelete(c, "subId", h.repo.DeleteHeroTalent)
 }
 
+// Paths
+
+// GetHeroPaths returns all paths for a hero.
+func (h *Handler) GetHeroPaths(c *gin.Context) {
+	handleGetByID(c, "id", h.repo.GetHeroPaths)
+}
+
+// UpsertHeroPath creates or updates a hero path.
+func (h *Handler) UpsertHeroPath(c *gin.Context) {
+	handlePost(c, h.repo.UpsertHeroPath)
+}
+
+// DeleteHeroPath deletes a hero path.
+func (h *Handler) DeleteHeroPath(c *gin.Context) {
+	handleDelete(c, "subId", h.repo.DeleteHeroPath)
+}
+
 // Equipment
 
 // GetHeroEquipment returns all equipment for a hero.
@@ -320,9 +337,9 @@ func (h *Handler) PatchHeroFocus(c *gin.Context) {
 	handlePost(c, h.repo.PatchHeroFocus)
 }
 
-// PatchHeroInvestiture updates hero current investiture.
-func (h *Handler) PatchHeroInvestiture(c *gin.Context) {
-	handlePost(c, h.repo.PatchHeroInvestiture)
+// PatchHeroMagic updates hero current magic.
+func (h *Handler) PatchHeroMagic(c *gin.Context) {
+	handlePost(c, h.repo.PatchHeroMagic)
 }
 
 // PatchHeroCurrency updates hero currency.

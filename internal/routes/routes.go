@@ -72,6 +72,7 @@ func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, he
 		registerHeroSubResource(heroes, "connections", handler.GetHeroConnections, handler.UpsertHeroConnection, handler.DeleteHeroConnection)
 		registerHeroSubResource(heroes, "notes", handler.GetHeroNotes, handler.UpsertHeroNote, handler.DeleteHeroNote)
 		registerHeroSubResource(heroes, "cultures", handler.GetHeroCultures, handler.UpsertHeroCulture, handler.DeleteHeroCulture)
+		registerHeroSubResource(heroes, "paths", handler.GetHeroPaths, handler.UpsertHeroPath, handler.DeleteHeroPath)
 
 		// Companion queries (read-only, instances managed via /npc-instances)
 		heroes.GET("/:id/companions", handler.GetHeroCompanions)
@@ -92,7 +93,7 @@ func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, he
 		// Resource patch routes
 		heroes.PATCH("/:id/health", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelEdit), handler.PatchHeroHealth)
 		heroes.PATCH("/:id/focus", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelEdit), handler.PatchHeroFocus)
-		heroes.PATCH("/:id/investiture", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelEdit), handler.PatchHeroInvestiture)
+		heroes.PATCH("/:id/magic", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelEdit), handler.PatchHeroMagic)
 		heroes.PATCH("/:id/currency", commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelEdit), handler.PatchHeroCurrency)
 	}
 

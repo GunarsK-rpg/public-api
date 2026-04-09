@@ -16,6 +16,11 @@ type HeroRepository interface {
 	UpsertHero(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 	DeleteHero(ctx context.Context, auth AuthContext, id int64) (bool, error)
 
+	// Hero paths
+	GetHeroPaths(ctx context.Context, auth AuthContext, heroID int64) (json.RawMessage, error)
+	UpsertHeroPath(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
+	DeleteHeroPath(ctx context.Context, auth AuthContext, id int64) (bool, error)
+
 	// Sub-resource getters (13)
 	GetHeroAttributes(ctx context.Context, auth AuthContext, heroID int64) (json.RawMessage, error)
 	GetHeroDefenses(ctx context.Context, auth AuthContext, heroID int64) (json.RawMessage, error)
@@ -49,7 +54,7 @@ type HeroRepository interface {
 	// Resource patches
 	PatchHeroHealth(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 	PatchHeroFocus(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
-	PatchHeroInvestiture(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
+	PatchHeroMagic(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 	PatchHeroCurrency(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 
 	// Equipment modification management
@@ -220,8 +225,8 @@ func (r *repository) PatchHeroFocus(ctx context.Context, auth AuthContext, data 
 	return r.callFunc(ctx, auth, "SELECT heroes.patch_hero_focus($1::jsonb)", data)
 }
 
-func (r *repository) PatchHeroInvestiture(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error) {
-	return r.callFunc(ctx, auth, "SELECT heroes.patch_hero_investiture($1::jsonb)", data)
+func (r *repository) PatchHeroMagic(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error) {
+	return r.callFunc(ctx, auth, "SELECT heroes.patch_hero_magic($1::jsonb)", data)
 }
 
 func (r *repository) PatchHeroCurrency(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error) {
@@ -246,6 +251,20 @@ func (r *repository) AddFavoriteAction(ctx context.Context, auth AuthContext, da
 
 func (r *repository) RemoveFavoriteAction(ctx context.Context, auth AuthContext, id int64) (bool, error) {
 	return r.execFunc(ctx, auth, "SELECT heroes.delete_hero_favorite_action($1)", id)
+}
+
+// Hero paths
+
+func (r *repository) GetHeroPaths(ctx context.Context, auth AuthContext, heroID int64) (json.RawMessage, error) {
+	return r.callFunc(ctx, auth, "SELECT heroes.get_hero_paths($1)", heroID)
+}
+
+func (r *repository) UpsertHeroPath(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error) {
+	return r.callFunc(ctx, auth, "SELECT heroes.upsert_hero_path($1::jsonb)", data)
+}
+
+func (r *repository) DeleteHeroPath(ctx context.Context, auth AuthContext, id int64) (bool, error) {
+	return r.execFunc(ctx, auth, "SELECT heroes.delete_hero_path($1)", id)
 }
 
 // Sub-resource deletes
