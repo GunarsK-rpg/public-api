@@ -960,15 +960,17 @@ func TestHeroGetByIDHandlers_RepoError(t *testing.T) {
 type postMockFn func(data json.RawMessage) (json.RawMessage, error)
 
 type postHandlerCase struct {
-	name    string
-	method  func(*Handler) gin.HandlerFunc
-	setMock func(*mockRepo, postMockFn)
+	name       string
+	httpMethod string // POST for create/upsert wrappers, PATCH for PatchHero* wrappers
+	method     func(*Handler) gin.HandlerFunc
+	setMock    func(*mockRepo, postMockFn)
 }
 
 var heroPostHandlerCases = []postHandlerCase{
 	{
-		name:   "CreateHero",
-		method: func(h *Handler) gin.HandlerFunc { return h.CreateHero },
+		name:       "CreateHero",
+		httpMethod: http.MethodPost,
+		method:     func(h *Handler) gin.HandlerFunc { return h.CreateHero },
 		setMock: func(m *mockRepo, fn postMockFn) {
 			m.upsertHeroFunc = func(_ context.Context, _ repository.AuthContext, data json.RawMessage) (json.RawMessage, error) {
 				return fn(data)
@@ -976,8 +978,9 @@ var heroPostHandlerCases = []postHandlerCase{
 		},
 	},
 	{
-		name:   "UpdateHero",
-		method: func(h *Handler) gin.HandlerFunc { return h.UpdateHero },
+		name:       "UpdateHero",
+		httpMethod: http.MethodPut,
+		method:     func(h *Handler) gin.HandlerFunc { return h.UpdateHero },
 		setMock: func(m *mockRepo, fn postMockFn) {
 			m.upsertHeroFunc = func(_ context.Context, _ repository.AuthContext, data json.RawMessage) (json.RawMessage, error) {
 				return fn(data)
@@ -985,8 +988,9 @@ var heroPostHandlerCases = []postHandlerCase{
 		},
 	},
 	{
-		name:   "UpsertHeroAttribute",
-		method: func(h *Handler) gin.HandlerFunc { return h.UpsertHeroAttribute },
+		name:       "UpsertHeroAttribute",
+		httpMethod: http.MethodPost,
+		method:     func(h *Handler) gin.HandlerFunc { return h.UpsertHeroAttribute },
 		setMock: func(m *mockRepo, fn postMockFn) {
 			m.upsertHeroAttributeFunc = func(_ context.Context, _ repository.AuthContext, data json.RawMessage) (json.RawMessage, error) {
 				return fn(data)
@@ -994,8 +998,9 @@ var heroPostHandlerCases = []postHandlerCase{
 		},
 	},
 	{
-		name:   "UpsertHeroDefense",
-		method: func(h *Handler) gin.HandlerFunc { return h.UpsertHeroDefense },
+		name:       "UpsertHeroDefense",
+		httpMethod: http.MethodPost,
+		method:     func(h *Handler) gin.HandlerFunc { return h.UpsertHeroDefense },
 		setMock: func(m *mockRepo, fn postMockFn) {
 			m.upsertHeroDefenseFunc = func(_ context.Context, _ repository.AuthContext, data json.RawMessage) (json.RawMessage, error) {
 				return fn(data)
@@ -1003,8 +1008,9 @@ var heroPostHandlerCases = []postHandlerCase{
 		},
 	},
 	{
-		name:   "UpsertHeroDerivedStat",
-		method: func(h *Handler) gin.HandlerFunc { return h.UpsertHeroDerivedStat },
+		name:       "UpsertHeroDerivedStat",
+		httpMethod: http.MethodPost,
+		method:     func(h *Handler) gin.HandlerFunc { return h.UpsertHeroDerivedStat },
 		setMock: func(m *mockRepo, fn postMockFn) {
 			m.upsertHeroDerivedStatFunc = func(_ context.Context, _ repository.AuthContext, data json.RawMessage) (json.RawMessage, error) {
 				return fn(data)
@@ -1012,8 +1018,9 @@ var heroPostHandlerCases = []postHandlerCase{
 		},
 	},
 	{
-		name:   "UpsertHeroSkill",
-		method: func(h *Handler) gin.HandlerFunc { return h.UpsertHeroSkill },
+		name:       "UpsertHeroSkill",
+		httpMethod: http.MethodPost,
+		method:     func(h *Handler) gin.HandlerFunc { return h.UpsertHeroSkill },
 		setMock: func(m *mockRepo, fn postMockFn) {
 			m.upsertHeroSkillFunc = func(_ context.Context, _ repository.AuthContext, data json.RawMessage) (json.RawMessage, error) {
 				return fn(data)
@@ -1021,8 +1028,9 @@ var heroPostHandlerCases = []postHandlerCase{
 		},
 	},
 	{
-		name:   "UpsertHeroExpertise",
-		method: func(h *Handler) gin.HandlerFunc { return h.UpsertHeroExpertise },
+		name:       "UpsertHeroExpertise",
+		httpMethod: http.MethodPost,
+		method:     func(h *Handler) gin.HandlerFunc { return h.UpsertHeroExpertise },
 		setMock: func(m *mockRepo, fn postMockFn) {
 			m.upsertHeroExpertiseFunc = func(_ context.Context, _ repository.AuthContext, data json.RawMessage) (json.RawMessage, error) {
 				return fn(data)
@@ -1030,8 +1038,9 @@ var heroPostHandlerCases = []postHandlerCase{
 		},
 	},
 	{
-		name:   "UpsertHeroTalent",
-		method: func(h *Handler) gin.HandlerFunc { return h.UpsertHeroTalent },
+		name:       "UpsertHeroTalent",
+		httpMethod: http.MethodPost,
+		method:     func(h *Handler) gin.HandlerFunc { return h.UpsertHeroTalent },
 		setMock: func(m *mockRepo, fn postMockFn) {
 			m.upsertHeroTalentFunc = func(_ context.Context, _ repository.AuthContext, data json.RawMessage) (json.RawMessage, error) {
 				return fn(data)
@@ -1039,8 +1048,9 @@ var heroPostHandlerCases = []postHandlerCase{
 		},
 	},
 	{
-		name:   "UpsertHeroPath",
-		method: func(h *Handler) gin.HandlerFunc { return h.UpsertHeroPath },
+		name:       "UpsertHeroPath",
+		httpMethod: http.MethodPost,
+		method:     func(h *Handler) gin.HandlerFunc { return h.UpsertHeroPath },
 		setMock: func(m *mockRepo, fn postMockFn) {
 			m.upsertHeroPathFunc = func(_ context.Context, _ repository.AuthContext, data json.RawMessage) (json.RawMessage, error) {
 				return fn(data)
@@ -1048,8 +1058,9 @@ var heroPostHandlerCases = []postHandlerCase{
 		},
 	},
 	{
-		name:   "UpsertHeroEquipment",
-		method: func(h *Handler) gin.HandlerFunc { return h.UpsertHeroEquipment },
+		name:       "UpsertHeroEquipment",
+		httpMethod: http.MethodPost,
+		method:     func(h *Handler) gin.HandlerFunc { return h.UpsertHeroEquipment },
 		setMock: func(m *mockRepo, fn postMockFn) {
 			m.upsertHeroEquipmentFunc = func(_ context.Context, _ repository.AuthContext, data json.RawMessage) (json.RawMessage, error) {
 				return fn(data)
@@ -1057,8 +1068,9 @@ var heroPostHandlerCases = []postHandlerCase{
 		},
 	},
 	{
-		name:   "AddEquipmentModification",
-		method: func(h *Handler) gin.HandlerFunc { return h.AddEquipmentModification },
+		name:       "AddEquipmentModification",
+		httpMethod: http.MethodPost,
+		method:     func(h *Handler) gin.HandlerFunc { return h.AddEquipmentModification },
 		setMock: func(m *mockRepo, fn postMockFn) {
 			m.addEquipmentModificationFunc = func(_ context.Context, _ repository.AuthContext, data json.RawMessage) (json.RawMessage, error) {
 				return fn(data)
@@ -1066,8 +1078,9 @@ var heroPostHandlerCases = []postHandlerCase{
 		},
 	},
 	{
-		name:   "AddFavoriteAction",
-		method: func(h *Handler) gin.HandlerFunc { return h.AddFavoriteAction },
+		name:       "AddFavoriteAction",
+		httpMethod: http.MethodPost,
+		method:     func(h *Handler) gin.HandlerFunc { return h.AddFavoriteAction },
 		setMock: func(m *mockRepo, fn postMockFn) {
 			m.addFavoriteActionFunc = func(_ context.Context, _ repository.AuthContext, data json.RawMessage) (json.RawMessage, error) {
 				return fn(data)
@@ -1075,8 +1088,9 @@ var heroPostHandlerCases = []postHandlerCase{
 		},
 	},
 	{
-		name:   "UpsertHeroCondition",
-		method: func(h *Handler) gin.HandlerFunc { return h.UpsertHeroCondition },
+		name:       "UpsertHeroCondition",
+		httpMethod: http.MethodPost,
+		method:     func(h *Handler) gin.HandlerFunc { return h.UpsertHeroCondition },
 		setMock: func(m *mockRepo, fn postMockFn) {
 			m.upsertHeroConditionFunc = func(_ context.Context, _ repository.AuthContext, data json.RawMessage) (json.RawMessage, error) {
 				return fn(data)
@@ -1084,8 +1098,9 @@ var heroPostHandlerCases = []postHandlerCase{
 		},
 	},
 	{
-		name:   "UpsertHeroInjury",
-		method: func(h *Handler) gin.HandlerFunc { return h.UpsertHeroInjury },
+		name:       "UpsertHeroInjury",
+		httpMethod: http.MethodPost,
+		method:     func(h *Handler) gin.HandlerFunc { return h.UpsertHeroInjury },
 		setMock: func(m *mockRepo, fn postMockFn) {
 			m.upsertHeroInjuryFunc = func(_ context.Context, _ repository.AuthContext, data json.RawMessage) (json.RawMessage, error) {
 				return fn(data)
@@ -1093,8 +1108,9 @@ var heroPostHandlerCases = []postHandlerCase{
 		},
 	},
 	{
-		name:   "UpsertHeroGoal",
-		method: func(h *Handler) gin.HandlerFunc { return h.UpsertHeroGoal },
+		name:       "UpsertHeroGoal",
+		httpMethod: http.MethodPost,
+		method:     func(h *Handler) gin.HandlerFunc { return h.UpsertHeroGoal },
 		setMock: func(m *mockRepo, fn postMockFn) {
 			m.upsertHeroGoalFunc = func(_ context.Context, _ repository.AuthContext, data json.RawMessage) (json.RawMessage, error) {
 				return fn(data)
@@ -1102,8 +1118,9 @@ var heroPostHandlerCases = []postHandlerCase{
 		},
 	},
 	{
-		name:   "UpsertHeroConnection",
-		method: func(h *Handler) gin.HandlerFunc { return h.UpsertHeroConnection },
+		name:       "UpsertHeroConnection",
+		httpMethod: http.MethodPost,
+		method:     func(h *Handler) gin.HandlerFunc { return h.UpsertHeroConnection },
 		setMock: func(m *mockRepo, fn postMockFn) {
 			m.upsertHeroConnectionFunc = func(_ context.Context, _ repository.AuthContext, data json.RawMessage) (json.RawMessage, error) {
 				return fn(data)
@@ -1111,8 +1128,9 @@ var heroPostHandlerCases = []postHandlerCase{
 		},
 	},
 	{
-		name:   "UpsertHeroNote",
-		method: func(h *Handler) gin.HandlerFunc { return h.UpsertHeroNote },
+		name:       "UpsertHeroNote",
+		httpMethod: http.MethodPost,
+		method:     func(h *Handler) gin.HandlerFunc { return h.UpsertHeroNote },
 		setMock: func(m *mockRepo, fn postMockFn) {
 			m.upsertHeroNoteFunc = func(_ context.Context, _ repository.AuthContext, data json.RawMessage) (json.RawMessage, error) {
 				return fn(data)
@@ -1120,8 +1138,9 @@ var heroPostHandlerCases = []postHandlerCase{
 		},
 	},
 	{
-		name:   "UpsertHeroCulture",
-		method: func(h *Handler) gin.HandlerFunc { return h.UpsertHeroCulture },
+		name:       "UpsertHeroCulture",
+		httpMethod: http.MethodPost,
+		method:     func(h *Handler) gin.HandlerFunc { return h.UpsertHeroCulture },
 		setMock: func(m *mockRepo, fn postMockFn) {
 			m.upsertHeroCultureFunc = func(_ context.Context, _ repository.AuthContext, data json.RawMessage) (json.RawMessage, error) {
 				return fn(data)
@@ -1129,8 +1148,9 @@ var heroPostHandlerCases = []postHandlerCase{
 		},
 	},
 	{
-		name:   "PatchHeroHealth",
-		method: func(h *Handler) gin.HandlerFunc { return h.PatchHeroHealth },
+		name:       "PatchHeroHealth",
+		httpMethod: http.MethodPatch,
+		method:     func(h *Handler) gin.HandlerFunc { return h.PatchHeroHealth },
 		setMock: func(m *mockRepo, fn postMockFn) {
 			m.patchHeroHealthFunc = func(_ context.Context, _ repository.AuthContext, data json.RawMessage) (json.RawMessage, error) {
 				return fn(data)
@@ -1138,8 +1158,9 @@ var heroPostHandlerCases = []postHandlerCase{
 		},
 	},
 	{
-		name:   "PatchHeroFocus",
-		method: func(h *Handler) gin.HandlerFunc { return h.PatchHeroFocus },
+		name:       "PatchHeroFocus",
+		httpMethod: http.MethodPatch,
+		method:     func(h *Handler) gin.HandlerFunc { return h.PatchHeroFocus },
 		setMock: func(m *mockRepo, fn postMockFn) {
 			m.patchHeroFocusFunc = func(_ context.Context, _ repository.AuthContext, data json.RawMessage) (json.RawMessage, error) {
 				return fn(data)
@@ -1147,8 +1168,9 @@ var heroPostHandlerCases = []postHandlerCase{
 		},
 	},
 	{
-		name:   "PatchHeroMagic",
-		method: func(h *Handler) gin.HandlerFunc { return h.PatchHeroMagic },
+		name:       "PatchHeroMagic",
+		httpMethod: http.MethodPatch,
+		method:     func(h *Handler) gin.HandlerFunc { return h.PatchHeroMagic },
 		setMock: func(m *mockRepo, fn postMockFn) {
 			m.patchHeroMagicFunc = func(_ context.Context, _ repository.AuthContext, data json.RawMessage) (json.RawMessage, error) {
 				return fn(data)
@@ -1156,8 +1178,9 @@ var heroPostHandlerCases = []postHandlerCase{
 		},
 	},
 	{
-		name:   "PatchHeroCurrency",
-		method: func(h *Handler) gin.HandlerFunc { return h.PatchHeroCurrency },
+		name:       "PatchHeroCurrency",
+		httpMethod: http.MethodPatch,
+		method:     func(h *Handler) gin.HandlerFunc { return h.PatchHeroCurrency },
 		setMock: func(m *mockRepo, fn postMockFn) {
 			m.patchHeroCurrencyFunc = func(_ context.Context, _ repository.AuthContext, data json.RawMessage) (json.RawMessage, error) {
 				return fn(data)
@@ -1180,7 +1203,7 @@ func TestHeroPostHandlers_Success(t *testing.T) {
 		mock := &mockRepo{}
 		handler := New(mock, nil)
 		router := gin.New()
-		router.POST("/r", func(c *gin.Context) {
+		router.Handle(tc.httpMethod, "/r", func(c *gin.Context) {
 			withAuth(c)
 			tc.method(handler)(c)
 		})
@@ -1196,7 +1219,7 @@ func TestHeroPostHandlers_Success(t *testing.T) {
 			return expected, nil
 		})
 
-		w := performRequest(t, router, "POST", "/r", body)
+		w := performRequest(t, router, tc.httpMethod, "/r", body)
 		if !called {
 			t.Errorf("repo method not called; handler may be wired to wrong repo func")
 		}
@@ -1214,7 +1237,7 @@ func TestHeroPostHandlers_NoAuth(t *testing.T) {
 		mock := &mockRepo{}
 		handler := New(mock, nil)
 		router := gin.New()
-		router.POST("/r", func(c *gin.Context) {
+		router.Handle(tc.httpMethod, "/r", func(c *gin.Context) {
 			tc.method(handler)(c)
 		})
 
@@ -1223,7 +1246,7 @@ func TestHeroPostHandlers_NoAuth(t *testing.T) {
 			return nil, nil
 		})
 
-		w := performRequest(t, router, "POST", "/r", []byte(`{}`))
+		w := performRequest(t, router, tc.httpMethod, "/r", []byte(`{}`))
 		if w.Code != http.StatusUnauthorized {
 			t.Errorf("status = %d, want %d", w.Code, http.StatusUnauthorized)
 		}
@@ -1235,7 +1258,7 @@ func TestHeroPostHandlers_InvalidJSON(t *testing.T) {
 		mock := &mockRepo{}
 		handler := New(mock, nil)
 		router := gin.New()
-		router.POST("/r", func(c *gin.Context) {
+		router.Handle(tc.httpMethod, "/r", func(c *gin.Context) {
 			withAuth(c)
 			tc.method(handler)(c)
 		})
@@ -1245,7 +1268,7 @@ func TestHeroPostHandlers_InvalidJSON(t *testing.T) {
 			return nil, nil
 		})
 
-		w := performRequest(t, router, "POST", "/r", []byte(`{not valid json`))
+		w := performRequest(t, router, tc.httpMethod, "/r", []byte(`{not valid json`))
 		if w.Code != http.StatusBadRequest {
 			t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
 		}
@@ -1257,7 +1280,7 @@ func TestHeroPostHandlers_EmptyBody(t *testing.T) {
 		mock := &mockRepo{}
 		handler := New(mock, nil)
 		router := gin.New()
-		router.POST("/r", func(c *gin.Context) {
+		router.Handle(tc.httpMethod, "/r", func(c *gin.Context) {
 			withAuth(c)
 			tc.method(handler)(c)
 		})
@@ -1267,7 +1290,7 @@ func TestHeroPostHandlers_EmptyBody(t *testing.T) {
 			return nil, nil
 		})
 
-		w := performRequest(t, router, "POST", "/r", []byte(``))
+		w := performRequest(t, router, tc.httpMethod, "/r", []byte(``))
 		if w.Code != http.StatusBadRequest {
 			t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
 		}
@@ -1279,7 +1302,7 @@ func TestHeroPostHandlers_RepoError(t *testing.T) {
 		mock := &mockRepo{}
 		handler := New(mock, nil)
 		router := gin.New()
-		router.POST("/r", func(c *gin.Context) {
+		router.Handle(tc.httpMethod, "/r", func(c *gin.Context) {
 			withAuth(c)
 			tc.method(handler)(c)
 		})
@@ -1288,7 +1311,7 @@ func TestHeroPostHandlers_RepoError(t *testing.T) {
 			return nil, errors.New("db error")
 		})
 
-		w := performRequest(t, router, "POST", "/r", []byte(`{}`))
+		w := performRequest(t, router, tc.httpMethod, "/r", []byte(`{}`))
 		if w.Code != http.StatusInternalServerError {
 			t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
 		}
