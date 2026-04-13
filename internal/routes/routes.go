@@ -46,6 +46,32 @@ func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, he
 		classifiers.GET("/source-books", handler.GetSourceBooks)
 	}
 
+	// Homebrew routes (write side of classifiers — source books and their content)
+	homebrew := v1.Group("/homebrew")
+	homebrew.Use(commonMiddleware.RequirePermission(constants.ResourceClassifiers, commonMiddleware.LevelEdit))
+	{
+		hbDelete := commonMiddleware.RequirePermission(constants.ResourceClassifiers, commonMiddleware.LevelDelete)
+
+		// Source books
+		homebrew.POST("/source-books", handler.CreateSourceBook)
+		homebrew.GET("/source-books/:code", handler.GetSourceBookByCode)
+		homebrew.PUT("/source-books/:code", handler.UpdateSourceBook)
+		homebrew.POST("/source-books/:code/restore", handler.RestoreSourceBook)
+		homebrew.DELETE("/source-books/:code", hbDelete, handler.DeleteSourceBook)
+
+		// Book-scoped classifiers
+		homebrew.POST("/source-books/:code/:type", handler.UpsertBookClassifier)
+		homebrew.PUT("/source-books/:code/:type/:cid", handler.UpsertBookClassifier)
+		homebrew.POST("/source-books/:code/:type/:cid/restore", handler.RestoreBookClassifier)
+		homebrew.DELETE("/source-books/:code/:type/:cid", hbDelete, handler.DeleteBookClassifier)
+
+		// Hero-scoped classifiers (Phase 4.1 reuse)
+		homebrew.POST("/heroes/:id/:type", handler.UpsertHeroClassifier)
+		homebrew.PUT("/heroes/:id/:type/:cid", handler.UpsertHeroClassifier)
+		homebrew.POST("/heroes/:id/:type/:cid/restore", handler.RestoreHeroClassifier)
+		homebrew.DELETE("/heroes/:id/:type/:cid", hbDelete, handler.DeleteHeroClassifier)
+	}
+
 	// Heroes routes
 	heroes := v1.Group("/heroes")
 	heroes.Use(commonMiddleware.RequirePermission(constants.ResourceHeroes, commonMiddleware.LevelRead))

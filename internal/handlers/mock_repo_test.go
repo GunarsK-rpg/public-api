@@ -126,6 +126,15 @@ type mockRepo struct {
 	// Combat - Companions
 	getHeroNpcInstancesFunc    func(ctx context.Context, auth repository.AuthContext, heroID int64) (json.RawMessage, error)
 	getCompanionNpcOptionsFunc func(ctx context.Context, auth repository.AuthContext, heroID int64) (json.RawMessage, error)
+
+	// Homebrew
+	upsertSourceBookFunc        func(ctx context.Context, auth repository.AuthContext, data json.RawMessage) (json.RawMessage, error)
+	getSourceBookByCodeFunc     func(ctx context.Context, auth repository.AuthContext, code string) (json.RawMessage, error)
+	deleteSourceBookByCodeFunc  func(ctx context.Context, auth repository.AuthContext, code string) (bool, error)
+	restoreSourceBookByCodeFunc func(ctx context.Context, auth repository.AuthContext, code string) (bool, error)
+	upsertClassifierFunc        func(ctx context.Context, auth repository.AuthContext, classifierType string, data json.RawMessage) (json.RawMessage, error)
+	deleteClassifierFunc        func(ctx context.Context, auth repository.AuthContext, classifierType string, id int64) (bool, error)
+	restoreClassifierFunc       func(ctx context.Context, auth repository.AuthContext, classifierType string, id int64) (bool, error)
 }
 
 var errNotImplemented = errors.New("not implemented")
@@ -790,4 +799,57 @@ func (m *mockRepo) GetCompanionNpcOptions(ctx context.Context, auth repository.A
 		return m.getCompanionNpcOptionsFunc(ctx, auth, heroID)
 	}
 	return nil, errNotImplemented
+}
+
+// =============================================================================
+// Homebrew
+// =============================================================================
+
+func (m *mockRepo) UpsertSourceBook(ctx context.Context, auth repository.AuthContext, data json.RawMessage) (json.RawMessage, error) {
+	if m.upsertSourceBookFunc != nil {
+		return m.upsertSourceBookFunc(ctx, auth, data)
+	}
+	return nil, errNotImplemented
+}
+
+func (m *mockRepo) GetSourceBookByCode(ctx context.Context, auth repository.AuthContext, code string) (json.RawMessage, error) {
+	if m.getSourceBookByCodeFunc != nil {
+		return m.getSourceBookByCodeFunc(ctx, auth, code)
+	}
+	return nil, errNotImplemented
+}
+
+func (m *mockRepo) DeleteSourceBookByCode(ctx context.Context, auth repository.AuthContext, code string) (bool, error) {
+	if m.deleteSourceBookByCodeFunc != nil {
+		return m.deleteSourceBookByCodeFunc(ctx, auth, code)
+	}
+	return false, errNotImplemented
+}
+
+func (m *mockRepo) RestoreSourceBookByCode(ctx context.Context, auth repository.AuthContext, code string) (bool, error) {
+	if m.restoreSourceBookByCodeFunc != nil {
+		return m.restoreSourceBookByCodeFunc(ctx, auth, code)
+	}
+	return false, errNotImplemented
+}
+
+func (m *mockRepo) UpsertClassifier(ctx context.Context, auth repository.AuthContext, classifierType string, data json.RawMessage) (json.RawMessage, error) {
+	if m.upsertClassifierFunc != nil {
+		return m.upsertClassifierFunc(ctx, auth, classifierType, data)
+	}
+	return nil, errNotImplemented
+}
+
+func (m *mockRepo) DeleteClassifier(ctx context.Context, auth repository.AuthContext, classifierType string, id int64) (bool, error) {
+	if m.deleteClassifierFunc != nil {
+		return m.deleteClassifierFunc(ctx, auth, classifierType, id)
+	}
+	return false, errNotImplemented
+}
+
+func (m *mockRepo) RestoreClassifier(ctx context.Context, auth repository.AuthContext, classifierType string, id int64) (bool, error) {
+	if m.restoreClassifierFunc != nil {
+		return m.restoreClassifierFunc(ctx, auth, classifierType, id)
+	}
+	return false, errNotImplemented
 }

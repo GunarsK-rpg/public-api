@@ -36,6 +36,11 @@ func (c *Cache) Set(ctx context.Context, key string, data json.RawMessage, ttl t
 	return c.client.Set(ctx, key, []byte(data), ttl).Err()
 }
 
+// Delete removes a key from cache. Missing keys are not an error.
+func (c *Cache) Delete(ctx context.Context, key string) error {
+	return c.client.Del(ctx, key).Err()
+}
+
 // HasFlag returns true if the flag key exists in cache.
 func (c *Cache) HasFlag(ctx context.Context, key string) (bool, error) {
 	n, err := c.client.Exists(ctx, key).Result()
