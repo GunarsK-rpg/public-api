@@ -24,6 +24,7 @@ type Repository interface {
 	HeroRepository
 	CampaignRepository
 	CombatRepository
+	HomebrewRepository
 }
 
 type repository struct {
