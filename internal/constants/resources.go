@@ -7,57 +7,50 @@ const (
 	ResourceCampaigns   = "campaigns"
 )
 
-// classifierTypes maps URL plural form to DB function suffix (singular).
-// Used for routing homebrew CRUD requests to the matching upsert_<suffix> /
-// delete_<suffix> SQL functions and for restore_classifier table-name lookup.
-var classifierTypes = map[string]string{
-	"ancestries":        "ancestry",
-	"ancestry-subtypes": "ancestry_subtype",
-	"cultures":          "culture",
-	"path-types":        "path_type",
-	"paths":             "path",
-	"specialties":       "specialty",
-	"talents":           "talent",
-	"actions":           "action",
-	"action-types":      "action_type",
-	"equipment":         "equipment",
-	"equipment-types":   "equipment_type",
-	"modifications":     "modification",
-	"skills":            "skill",
-	"expertises":        "expertise",
-	"starting-kits":     "starting_kit",
+// classifierMeta holds the DB function suffix (singular) and the
+// soft-deletable table name for a URL plural form.
+type classifierMeta struct {
+	suffix string
+	table  string
 }
 
-// classifierTables maps URL plural form to soft-deletable table name used
-// by classifiers.restore_classifier(table_name, id).
-var classifierTables = map[string]string{
-	"ancestries":        "cl_ancestries",
-	"ancestry-subtypes": "cl_ancestry_subtypes",
-	"cultures":          "cl_cultures",
-	"path-types":        "cl_path_types",
-	"paths":             "cl_paths",
-	"specialties":       "cl_specialties",
-	"talents":           "cl_talents",
-	"actions":           "cl_actions",
-	"action-types":      "cl_action_types",
-	"equipment":         "cl_equipments",
-	"equipment-types":   "cl_equipment_types",
-	"modifications":     "cl_modifications",
-	"skills":            "cl_skills",
-	"expertises":        "cl_expertises",
-	"starting-kits":     "cl_starting_kits",
+// classifiers maps URL plural form to its DB function suffix and table name.
+// Used for routing homebrew CRUD requests to classifiers.upsert_<suffix> /
+// delete_<suffix> and to classifiers.restore_classifier(table, id).
+var classifiers = map[string]classifierMeta{
+	"ancestries":        {"ancestry", "cl_ancestries"},
+	"ancestry-subtypes": {"ancestry_subtype", "cl_ancestry_subtypes"},
+	"cultures":          {"culture", "cl_cultures"},
+	"path-types":        {"path_type", "cl_path_types"},
+	"paths":             {"path", "cl_paths"},
+	"specialties":       {"specialty", "cl_specialties"},
+	"talents":           {"talent", "cl_talents"},
+	"actions":           {"action", "cl_actions"},
+	"action-types":      {"action_type", "cl_action_types"},
+	"equipment":         {"equipment", "cl_equipments"},
+	"equipment-types":   {"equipment_type", "cl_equipment_types"},
+	"modifications":     {"modification", "cl_modifications"},
+	"skills":            {"skill", "cl_skills"},
+	"expertises":        {"expertise", "cl_expertises"},
+	"starting-kits":     {"starting_kit", "cl_starting_kits"},
 }
 
-// ClassifierTypeSuffix returns the DB function suffix for an URL plural form.
+// ClassifierTypeSuffix returns the DB function suffix for a URL plural form.
 // Returns ok=false if the type is not in the allow-list.
 func ClassifierTypeSuffix(urlType string) (suffix string, ok bool) {
-	suffix, ok = classifierTypes[urlType]
-	return
+	m, ok := classifiers[urlType]
+	if !ok {
+		return "", false
+	}
+	return m.suffix, true
 }
 
-// ClassifierTableName returns the soft-deletable table name for an URL plural
+// ClassifierTableName returns the soft-deletable table name for a URL plural
 // form. Returns ok=false if the type is not in the allow-list.
 func ClassifierTableName(urlType string) (table string, ok bool) {
-	table, ok = classifierTables[urlType]
-	return
+	m, ok := classifiers[urlType]
+	if !ok {
+		return "", false
+	}
+	return m.table, true
 }

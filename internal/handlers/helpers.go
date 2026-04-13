@@ -190,21 +190,16 @@ func handlePost(c *gin.Context, fn RepoUpsertFunc) {
 	c.Data(http.StatusOK, "application/json", result)
 }
 
-// handleDeleteByString: auth → string path param → repo call → 204 or 404
-func handleDeleteByString(c *gin.Context, paramName string, fn RepoDeleteStringFunc) {
+// handleDeleteCommon: auth → repo delete closure → 204 or 404. Callers parse
+// their param and pass a closure that captures it.
+func handleDeleteCommon(c *gin.Context, del func(ctx context.Context, auth repository.AuthContext) (bool, error)) {
 	auth, err := GetAuthContext(c)
 	if err != nil {
 		commonHandlers.RespondError(c, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
-	value := c.Param(paramName)
-	if value == "" {
-		commonHandlers.RespondError(c, http.StatusBadRequest, fmt.Sprintf("missing path parameter: %s", paramName))
-		return
-	}
-
-	deleted, err := fn(c.Request.Context(), auth, value)
+	deleted, err := del(c.Request.Context(), auth)
 	if err != nil {
 		HandlePgxError(c, err)
 		return
@@ -218,32 +213,28 @@ func handleDeleteByString(c *gin.Context, paramName string, fn RepoDeleteStringF
 	c.Status(http.StatusNoContent)
 }
 
-// handleDelete: auth → path param → repo call → 204 or 404
-func handleDelete(c *gin.Context, paramName string, fn RepoDeleteFunc) {
-	auth, err := GetAuthContext(c)
-	if err != nil {
-		commonHandlers.RespondError(c, http.StatusUnauthorized, "unauthorized")
+// handleDeleteByString: auth → string path param → repo call → 204 or 404
+func handleDeleteByString(c *gin.Context, paramName string, fn RepoDeleteStringFunc) {
+	value := c.Param(paramName)
+	if value == "" {
+		commonHandlers.RespondError(c, http.StatusBadRequest, fmt.Sprintf("missing path parameter: %s", paramName))
 		return
 	}
+	handleDeleteCommon(c, func(ctx context.Context, auth repository.AuthContext) (bool, error) {
+		return fn(ctx, auth, value)
+	})
+}
 
+// handleDelete: auth → path param → repo call → 204 or 404
+func handleDelete(c *gin.Context, paramName string, fn RepoDeleteFunc) {
 	id, err := getPathParamInt64(c, paramName)
 	if err != nil {
 		commonHandlers.RespondError(c, http.StatusBadRequest, err.Error())
 		return
 	}
-
-	deleted, err := fn(c.Request.Context(), auth, id)
-	if err != nil {
-		HandlePgxError(c, err)
-		return
-	}
-
-	if !deleted {
-		commonHandlers.RespondError(c, http.StatusNotFound, "not found")
-		return
-	}
-
-	c.Status(http.StatusNoContent)
+	handleDeleteCommon(c, func(ctx context.Context, auth repository.AuthContext) (bool, error) {
+		return fn(ctx, auth, id)
+	})
 }
 
 // handleGetByTwoIDs: auth → two path params → repo call → null check → JSON response

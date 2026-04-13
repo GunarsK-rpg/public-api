@@ -331,6 +331,9 @@ func TestDeleteBookClassifier_Success(t *testing.T) {
 		getSourceBookByCodeFunc: func(_ context.Context, _ repository.AuthContext, _ string) (json.RawMessage, error) {
 			return json.RawMessage(`{"id":1}`), nil
 		},
+		isClassifierInScopeFunc: func(_ context.Context, _ repository.AuthContext, _ string, _ int64, _, _ *int64) (bool, error) {
+			return true, nil
+		},
 		deleteClassifierFunc: func(_ context.Context, _ repository.AuthContext, ct string, id int64) (bool, error) {
 			if ct != "talents" || id != 5 {
 				t.Errorf("got %s/%d, want talents/5", ct, id)
@@ -355,6 +358,9 @@ func TestRestoreBookClassifier_Success(t *testing.T) {
 	mock := &mockRepo{
 		getSourceBookByCodeFunc: func(_ context.Context, _ repository.AuthContext, _ string) (json.RawMessage, error) {
 			return json.RawMessage(`{"id":1}`), nil
+		},
+		isClassifierInScopeFunc: func(_ context.Context, _ repository.AuthContext, _ string, _ int64, _, _ *int64) (bool, error) {
+			return true, nil
 		},
 		restoreClassifierFunc: func(_ context.Context, _ repository.AuthContext, _ string, _ int64) (bool, error) {
 			return true, nil
@@ -431,6 +437,9 @@ func TestUpsertHeroClassifier_AccessDenied(t *testing.T) {
 func TestDeleteHeroClassifier_Success(t *testing.T) {
 	mock := &mockRepo{
 		validateHeroAccessFunc: func(_ context.Context, _ repository.AuthContext, _ int64) error { return nil },
+		isClassifierInScopeFunc: func(_ context.Context, _ repository.AuthContext, _ string, _ int64, _, _ *int64) (bool, error) {
+			return true, nil
+		},
 		deleteClassifierFunc: func(_ context.Context, _ repository.AuthContext, _ string, _ int64) (bool, error) {
 			return true, nil
 		},
@@ -451,6 +460,9 @@ func TestDeleteHeroClassifier_Success(t *testing.T) {
 func TestRestoreHeroClassifier_Success(t *testing.T) {
 	mock := &mockRepo{
 		validateHeroAccessFunc: func(_ context.Context, _ repository.AuthContext, _ int64) error { return nil },
+		isClassifierInScopeFunc: func(_ context.Context, _ repository.AuthContext, _ string, _ int64, _, _ *int64) (bool, error) {
+			return true, nil
+		},
 		restoreClassifierFunc: func(_ context.Context, _ repository.AuthContext, _ string, _ int64) (bool, error) {
 			return true, nil
 		},

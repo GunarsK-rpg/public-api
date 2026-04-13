@@ -24,6 +24,11 @@ type HomebrewRepository interface {
 	UpsertClassifier(ctx context.Context, auth AuthContext, classifierType string, data json.RawMessage) (json.RawMessage, error)
 	DeleteClassifier(ctx context.Context, auth AuthContext, classifierType string, id int64) (bool, error)
 	RestoreClassifier(ctx context.Context, auth AuthContext, classifierType string, id int64) (bool, error)
+
+	// IsClassifierInScope reports whether a classifier row's scope matches
+	// (sourceBookID, heroID). Either bound may be nil; nil matches nil.
+	// Propagates no_data_found when the row does not exist.
+	IsClassifierInScope(ctx context.Context, auth AuthContext, classifierType string, id int64, sourceBookID, heroID *int64) (bool, error)
 }
 
 // ErrUnknownClassifierType is returned when a caller passes a classifier type
@@ -71,4 +76,15 @@ func (r *repository) RestoreClassifier(ctx context.Context, auth AuthContext, cl
 		return false, fmt.Errorf("%w: %q", ErrUnknownClassifierType, classifierType)
 	}
 	return r.execFunc(ctx, auth, "SELECT classifiers.restore_classifier($1, $2)", table, id)
+}
+
+func (r *repository) IsClassifierInScope(ctx context.Context, auth AuthContext, classifierType string, id int64, sourceBookID, heroID *int64) (bool, error) {
+	table, ok := constants.ClassifierTableName(classifierType)
+	if !ok {
+		return false, fmt.Errorf("%w: %q", ErrUnknownClassifierType, classifierType)
+	}
+	return r.execFunc(ctx, auth,
+		"SELECT public.is_classifier_in_scope($1, $2, $3, $4)",
+		table, id, sourceBookID, heroID,
+	)
 }

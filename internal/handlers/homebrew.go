@@ -181,9 +181,8 @@ func (h *Handler) doUpsertClassifier(c *gin.Context, urlType string, sc *classif
 }
 
 func (h *Handler) doDeleteClassifier(c *gin.Context, urlType string, sc *classifierScope) {
-	cid, err := getPathParamInt64(c, "cid")
-	if err != nil {
-		commonHandlers.RespondError(c, http.StatusBadRequest, err.Error())
+	cid, ok := h.requireCidInScope(c, urlType, sc)
+	if !ok {
 		return
 	}
 	deleted, err := h.repo.DeleteClassifier(c.Request.Context(), sc.auth, urlType, cid)
@@ -200,9 +199,8 @@ func (h *Handler) doDeleteClassifier(c *gin.Context, urlType string, sc *classif
 }
 
 func (h *Handler) doRestoreClassifier(c *gin.Context, urlType string, sc *classifierScope) {
-	cid, err := getPathParamInt64(c, "cid")
-	if err != nil {
-		commonHandlers.RespondError(c, http.StatusBadRequest, err.Error())
+	cid, ok := h.requireCidInScope(c, urlType, sc)
+	if !ok {
 		return
 	}
 	restored, err := h.repo.RestoreClassifier(c.Request.Context(), sc.auth, urlType, cid)
@@ -216,6 +214,27 @@ func (h *Handler) doRestoreClassifier(c *gin.Context, urlType string, sc *classi
 	}
 	sc.invalidate(c.Request.Context(), c)
 	c.Status(http.StatusNoContent)
+}
+
+// requireCidInScope parses :cid and verifies the classifier belongs to the
+// request's book/hero scope. Keeps mutation + cache invalidation on the
+// scope the caller actually named, even when the user owns both sides.
+func (h *Handler) requireCidInScope(c *gin.Context, urlType string, sc *classifierScope) (int64, bool) {
+	cid, err := getPathParamInt64(c, "cid")
+	if err != nil {
+		commonHandlers.RespondError(c, http.StatusBadRequest, err.Error())
+		return 0, false
+	}
+	match, err := h.repo.IsClassifierInScope(c.Request.Context(), sc.auth, urlType, cid, sc.sourceBookID, sc.heroID)
+	if err != nil {
+		HandlePgxError(c, err)
+		return 0, false
+	}
+	if !match {
+		commonHandlers.RespondError(c, http.StatusNotFound, "not found")
+		return 0, false
+	}
+	return cid, true
 }
 
 // ----------------------------------------------------------------------------
@@ -382,6 +401,9 @@ func injectScope(raw json.RawMessage, sourceBookID, heroID *int64) (json.RawMess
 	} else if err := json.Unmarshal(raw, &obj); err != nil {
 		return nil, fmt.Errorf("payload must be a JSON object: %w", err)
 	}
+	if obj == nil {
+		obj = map[string]json.RawMessage{}
+	}
 
 	if sourceBookID != nil {
 		v, _ := json.Marshal(*sourceBookID)
@@ -403,6 +425,9 @@ func mergeCode(raw json.RawMessage, code string) (json.RawMessage, error) {
 		obj = map[string]json.RawMessage{}
 	} else if err := json.Unmarshal(raw, &obj); err != nil {
 		return nil, fmt.Errorf("payload must be a JSON object: %w", err)
+	}
+	if obj == nil {
+		obj = map[string]json.RawMessage{}
 	}
 	v, _ := json.Marshal(code)
 	obj["code"] = v

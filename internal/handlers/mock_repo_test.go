@@ -135,6 +135,7 @@ type mockRepo struct {
 	upsertClassifierFunc        func(ctx context.Context, auth repository.AuthContext, classifierType string, data json.RawMessage) (json.RawMessage, error)
 	deleteClassifierFunc        func(ctx context.Context, auth repository.AuthContext, classifierType string, id int64) (bool, error)
 	restoreClassifierFunc       func(ctx context.Context, auth repository.AuthContext, classifierType string, id int64) (bool, error)
+	isClassifierInScopeFunc     func(ctx context.Context, auth repository.AuthContext, classifierType string, id int64, sourceBookID, heroID *int64) (bool, error)
 }
 
 var errNotImplemented = errors.New("not implemented")
@@ -850,6 +851,13 @@ func (m *mockRepo) DeleteClassifier(ctx context.Context, auth repository.AuthCon
 func (m *mockRepo) RestoreClassifier(ctx context.Context, auth repository.AuthContext, classifierType string, id int64) (bool, error) {
 	if m.restoreClassifierFunc != nil {
 		return m.restoreClassifierFunc(ctx, auth, classifierType, id)
+	}
+	return false, errNotImplemented
+}
+
+func (m *mockRepo) IsClassifierInScope(ctx context.Context, auth repository.AuthContext, classifierType string, id int64, sourceBookID, heroID *int64) (bool, error) {
+	if m.isClassifierInScopeFunc != nil {
+		return m.isClassifierInScopeFunc(ctx, auth, classifierType, id, sourceBookID, heroID)
 	}
 	return false, errNotImplemented
 }

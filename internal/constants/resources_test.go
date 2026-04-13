@@ -43,16 +43,3 @@ func TestClassifierTableName(t *testing.T) {
 		t.Error("ClassifierTableName(widgets) ok=true, want false")
 	}
 }
-
-func TestClassifierMaps_KeysMatch(t *testing.T) {
-	for k := range classifierTypes {
-		if _, ok := classifierTables[k]; !ok {
-			t.Errorf("classifierTypes has %q but classifierTables does not", k)
-		}
-	}
-	for k := range classifierTables {
-		if _, ok := classifierTypes[k]; !ok {
-			t.Errorf("classifierTables has %q but classifierTypes does not", k)
-		}
-	}
-}
