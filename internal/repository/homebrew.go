@@ -18,6 +18,10 @@ type HomebrewRepository interface {
 	DeleteSourceBookByCode(ctx context.Context, auth AuthContext, code string) (bool, error)
 	RestoreSourceBookByCode(ctx context.Context, auth AuthContext, code string) (bool, error)
 
+	// ListMyHomebrewSourceBooks returns the session user's own homebrew books,
+	// including inactive and soft-deleted rows. Used by the Library page.
+	ListMyHomebrewSourceBooks(ctx context.Context, auth AuthContext) (json.RawMessage, error)
+
 	// Generic classifier CRUD. classifierType is the URL plural form;
 	// the repository validates it against the allow-list before any string
 	// interpolation into SQL.
@@ -50,6 +54,10 @@ func (r *repository) DeleteSourceBookByCode(ctx context.Context, auth AuthContex
 
 func (r *repository) RestoreSourceBookByCode(ctx context.Context, auth AuthContext, code string) (bool, error) {
 	return r.execFunc(ctx, auth, "SELECT classifiers.restore_source_book($1::uuid)", code)
+}
+
+func (r *repository) ListMyHomebrewSourceBooks(ctx context.Context, auth AuthContext) (json.RawMessage, error) {
+	return r.callFunc(ctx, auth, `SELECT classifiers.get_source_books('{"includeInactive": true}'::jsonb)`)
 }
 
 func (r *repository) UpsertClassifier(ctx context.Context, auth AuthContext, classifierType string, data json.RawMessage) (json.RawMessage, error) {

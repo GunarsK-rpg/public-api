@@ -281,6 +281,12 @@ func (h *Handler) GetSourceBookByCode(c *gin.Context) {
 	handleGetByString(c, "code", h.repo.GetSourceBookByCode)
 }
 
+// ListMyHomebrewSourceBooks handles GET /api/v1/homebrew/source-books.
+// Returns the session user's own homebrew books, including inactive and soft-deleted rows.
+func (h *Handler) ListMyHomebrewSourceBooks(c *gin.Context) {
+	handleGet(c, h.repo.ListMyHomebrewSourceBooks)
+}
+
 // DeleteSourceBook handles DELETE /api/v1/homebrew/source-books/:code (soft).
 func (h *Handler) DeleteSourceBook(c *gin.Context) {
 	h.sourceBookBoolOp(c, h.repo.DeleteSourceBookByCode, "not found")

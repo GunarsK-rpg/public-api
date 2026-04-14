@@ -128,14 +128,15 @@ type mockRepo struct {
 	getCompanionNpcOptionsFunc func(ctx context.Context, auth repository.AuthContext, heroID int64) (json.RawMessage, error)
 
 	// Homebrew
-	upsertSourceBookFunc        func(ctx context.Context, auth repository.AuthContext, data json.RawMessage) (json.RawMessage, error)
-	getSourceBookByCodeFunc     func(ctx context.Context, auth repository.AuthContext, code string) (json.RawMessage, error)
-	deleteSourceBookByCodeFunc  func(ctx context.Context, auth repository.AuthContext, code string) (bool, error)
-	restoreSourceBookByCodeFunc func(ctx context.Context, auth repository.AuthContext, code string) (bool, error)
-	upsertClassifierFunc        func(ctx context.Context, auth repository.AuthContext, classifierType string, data json.RawMessage) (json.RawMessage, error)
-	deleteClassifierFunc        func(ctx context.Context, auth repository.AuthContext, classifierType string, id int64) (bool, error)
-	restoreClassifierFunc       func(ctx context.Context, auth repository.AuthContext, classifierType string, id int64) (bool, error)
-	isClassifierInScopeFunc     func(ctx context.Context, auth repository.AuthContext, classifierType string, id int64, sourceBookID, heroID *int64) (bool, error)
+	upsertSourceBookFunc          func(ctx context.Context, auth repository.AuthContext, data json.RawMessage) (json.RawMessage, error)
+	getSourceBookByCodeFunc       func(ctx context.Context, auth repository.AuthContext, code string) (json.RawMessage, error)
+	deleteSourceBookByCodeFunc    func(ctx context.Context, auth repository.AuthContext, code string) (bool, error)
+	restoreSourceBookByCodeFunc   func(ctx context.Context, auth repository.AuthContext, code string) (bool, error)
+	listMyHomebrewSourceBooksFunc func(ctx context.Context, auth repository.AuthContext) (json.RawMessage, error)
+	upsertClassifierFunc          func(ctx context.Context, auth repository.AuthContext, classifierType string, data json.RawMessage) (json.RawMessage, error)
+	deleteClassifierFunc          func(ctx context.Context, auth repository.AuthContext, classifierType string, id int64) (bool, error)
+	restoreClassifierFunc         func(ctx context.Context, auth repository.AuthContext, classifierType string, id int64) (bool, error)
+	isClassifierInScopeFunc       func(ctx context.Context, auth repository.AuthContext, classifierType string, id int64, sourceBookID, heroID *int64) (bool, error)
 }
 
 var errNotImplemented = errors.New("not implemented")
@@ -832,6 +833,13 @@ func (m *mockRepo) RestoreSourceBookByCode(ctx context.Context, auth repository.
 		return m.restoreSourceBookByCodeFunc(ctx, auth, code)
 	}
 	return false, errNotImplemented
+}
+
+func (m *mockRepo) ListMyHomebrewSourceBooks(ctx context.Context, auth repository.AuthContext) (json.RawMessage, error) {
+	if m.listMyHomebrewSourceBooksFunc != nil {
+		return m.listMyHomebrewSourceBooksFunc(ctx, auth)
+	}
+	return nil, errNotImplemented
 }
 
 func (m *mockRepo) UpsertClassifier(ctx context.Context, auth repository.AuthContext, classifierType string, data json.RawMessage) (json.RawMessage, error) {

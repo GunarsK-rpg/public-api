@@ -117,6 +117,28 @@ func TestParseSourceBookID(t *testing.T) {
 // Source-book handlers
 // =============================================================================
 
+func TestListMyHomebrewSourceBooks_Success(t *testing.T) {
+	mock := &mockRepo{
+		listMyHomebrewSourceBooksFunc: func(_ context.Context, _ repository.AuthContext) (json.RawMessage, error) {
+			return json.RawMessage(`[{"id":1,"name":"Book A"},{"id":2,"name":"Book B"}]`), nil
+		},
+	}
+	handler := New(mock, nil)
+	router := gin.New()
+	router.GET("/homebrew/source-books", func(c *gin.Context) {
+		withAuth(c)
+		handler.ListMyHomebrewSourceBooks(c)
+	})
+
+	w := performRequest(t, router, "GET", "/homebrew/source-books", nil)
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d (body=%s)", w.Code, http.StatusOK, w.Body.String())
+	}
+	if got, want := w.Body.String(), `[{"id":1,"name":"Book A"},{"id":2,"name":"Book B"}]`; got != want {
+		t.Errorf("body = %s, want %s", got, want)
+	}
+}
+
 func TestCreateSourceBook_Success(t *testing.T) {
 	mock := &mockRepo{}
 	mock.upsertSourceBookFunc = func(_ context.Context, _ repository.AuthContext, data json.RawMessage) (json.RawMessage, error) {
@@ -129,7 +151,7 @@ func TestCreateSourceBook_Success(t *testing.T) {
 		handler.CreateSourceBook(c)
 	})
 
-	w := performRequest(t, router, "POST", "/homebrew/source-books", []byte(`{"name":"My Book","gameSystemCode":"homebrew"}`))
+	w := performRequest(t, router, "POST", "/homebrew/source-books", []byte(`{"name":"My Book","gameSystem":{"code":"homebrew"}}`))
 	if w.Code != http.StatusOK {
 		t.Errorf("status = %d, want %d (body=%s)", w.Code, http.StatusOK, w.Body.String())
 	}
