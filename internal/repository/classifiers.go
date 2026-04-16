@@ -17,7 +17,7 @@ func (r *repository) GetClassifiersFiltered(ctx context.Context, auth AuthContex
 }
 
 func (r *repository) GetSourceBooks(ctx context.Context, auth AuthContext) (json.RawMessage, error) {
-	return r.callFunc(ctx, auth, "SELECT classifiers.get_source_books()")
+	return r.callFunc(ctx, auth, `SELECT classifiers.get_source_books('{"includeGlobal": true}'::jsonb)`)
 }
 
 func (r *repository) ValidateHeroAccess(ctx context.Context, auth AuthContext, heroID int64) error {

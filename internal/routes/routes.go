@@ -46,29 +46,31 @@ func Setup(router *gin.Engine, handler *handlers.Handler, cfg *config.Config, he
 		classifiers.GET("/source-books", handler.GetSourceBooks)
 	}
 
-	// Homebrew routes (write side of classifiers — source books and their content)
+	// Homebrew routes (read + write side of classifiers — source books and their content)
 	homebrew := v1.Group("/homebrew")
-	homebrew.Use(commonMiddleware.RequirePermission(constants.ResourceClassifiers, commonMiddleware.LevelEdit))
 	{
+		hbRead := commonMiddleware.RequirePermission(constants.ResourceClassifiers, commonMiddleware.LevelRead)
+		hbEdit := commonMiddleware.RequirePermission(constants.ResourceClassifiers, commonMiddleware.LevelEdit)
 		hbDelete := commonMiddleware.RequirePermission(constants.ResourceClassifiers, commonMiddleware.LevelDelete)
 
 		// Source books
-		homebrew.POST("/source-books", handler.CreateSourceBook)
-		homebrew.GET("/source-books/:code", handler.GetSourceBookByCode)
-		homebrew.PUT("/source-books/:code", handler.UpdateSourceBook)
-		homebrew.POST("/source-books/:code/restore", handler.RestoreSourceBook)
+		homebrew.GET("/source-books", hbRead, handler.ListMyHomebrewSourceBooks)
+		homebrew.GET("/source-books/:code", hbRead, handler.GetSourceBookByCode)
+		homebrew.POST("/source-books", hbEdit, handler.CreateSourceBook)
+		homebrew.PUT("/source-books/:code", hbEdit, handler.UpdateSourceBook)
+		homebrew.POST("/source-books/:code/restore", hbEdit, handler.RestoreSourceBook)
 		homebrew.DELETE("/source-books/:code", hbDelete, handler.DeleteSourceBook)
 
 		// Book-scoped classifiers
-		homebrew.POST("/source-books/:code/:type", handler.UpsertBookClassifier)
-		homebrew.PUT("/source-books/:code/:type/:cid", handler.UpsertBookClassifier)
-		homebrew.POST("/source-books/:code/:type/:cid/restore", handler.RestoreBookClassifier)
+		homebrew.POST("/source-books/:code/:type", hbEdit, handler.UpsertBookClassifier)
+		homebrew.PUT("/source-books/:code/:type/:cid", hbEdit, handler.UpsertBookClassifier)
+		homebrew.POST("/source-books/:code/:type/:cid/restore", hbEdit, handler.RestoreBookClassifier)
 		homebrew.DELETE("/source-books/:code/:type/:cid", hbDelete, handler.DeleteBookClassifier)
 
 		// Hero-scoped classifiers (Phase 4.1 reuse)
-		homebrew.POST("/heroes/:id/:type", handler.UpsertHeroClassifier)
-		homebrew.PUT("/heroes/:id/:type/:cid", handler.UpsertHeroClassifier)
-		homebrew.POST("/heroes/:id/:type/:cid/restore", handler.RestoreHeroClassifier)
+		homebrew.POST("/heroes/:id/:type", hbEdit, handler.UpsertHeroClassifier)
+		homebrew.PUT("/heroes/:id/:type/:cid", hbEdit, handler.UpsertHeroClassifier)
+		homebrew.POST("/heroes/:id/:type/:cid/restore", hbEdit, handler.RestoreHeroClassifier)
 		homebrew.DELETE("/heroes/:id/:type/:cid", hbDelete, handler.DeleteHeroClassifier)
 	}
 
