@@ -55,7 +55,7 @@ func (h *Handler) resolveSourceBookIDByCode(c *gin.Context, auth repository.Auth
 	id, ok := parseSourceBookID(raw)
 	if !ok {
 		commonHandlers.LogAndRespondError(c, http.StatusInternalServerError,
-			fmt.Errorf("source book payload missing id"), "failed to parse source book")
+			fmt.Errorf("failed to parse source book payload"), "failed to parse source book")
 		return 0, false
 	}
 	return id, true
@@ -441,6 +441,7 @@ func mergeCode(raw json.RawMessage, code string) (json.RawMessage, error) {
 }
 
 // parseSourceBookID extracts the integer id from an upsert_source_book result.
+// Returns ok=false when the payload is empty/null or cannot be unmarshaled.
 func parseSourceBookID(raw json.RawMessage) (int64, bool) {
 	if len(raw) == 0 || string(raw) == "null" {
 		return 0, false
@@ -448,7 +449,7 @@ func parseSourceBookID(raw json.RawMessage) (int64, bool) {
 	var book struct {
 		ID int64 `json:"id"`
 	}
-	if err := json.Unmarshal(raw, &book); err != nil || book.ID == 0 {
+	if err := json.Unmarshal(raw, &book); err != nil {
 		return 0, false
 	}
 	return book.ID, true
