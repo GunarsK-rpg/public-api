@@ -9,7 +9,7 @@ func TestClassifierTypeSuffix(t *testing.T) {
 		"talents":           "talent",
 		"path-types":        "path_type",
 		"ancestry-subtypes": "ancestry_subtype",
-		"equipment":         "equipment",
+		"equipments":        "equipment",
 		"starting-kits":     "starting_kit",
 	}
 	for url, want := range cases {
@@ -31,7 +31,7 @@ func TestClassifierTableName(t *testing.T) {
 		"talents":           "cl_talents",
 		"path-types":        "cl_path_types",
 		"ancestry-subtypes": "cl_ancestry_subtypes",
-		"equipment":         "cl_equipments",
+		"equipments":        "cl_equipments",
 		"starting-kits":     "cl_starting_kits",
 	}
 	for url, want := range cases {
