@@ -27,7 +27,7 @@ var classifiers = map[string]classifierMeta{
 	"talents":           {"talent", "cl_talents"},
 	"actions":           {"action", "cl_actions"},
 	"action-types":      {"action_type", "cl_action_types"},
-	"equipment":         {"equipment", "cl_equipments"},
+	"equipments":        {"equipment", "cl_equipments"},
 	"equipment-types":   {"equipment_type", "cl_equipment_types"},
 	"modifications":     {"modification", "cl_modifications"},
 	"skills":            {"skill", "cl_skills"},

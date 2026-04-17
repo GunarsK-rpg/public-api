@@ -92,49 +92,12 @@ func (h *Handler) bookPreamble(c *gin.Context) (urlType string, sc *classifierSc
 	}, true
 }
 
-// heroPreamble runs auth + type validation + hero id parse + access check + cache binding.
-func (h *Handler) heroPreamble(c *gin.Context) (urlType string, sc *classifierScope, ok bool) {
-	auth, ok := h.requireAuth(c)
-	if !ok {
-		return "", nil, false
-	}
-	urlType, ok = parseClassifierType(c)
-	if !ok {
-		return "", nil, false
-	}
-	heroID, err := getPathParamInt64(c, "id")
-	if err != nil {
-		commonHandlers.RespondError(c, http.StatusBadRequest, err.Error())
-		return "", nil, false
-	}
-	if err := h.repo.ValidateHeroAccess(c.Request.Context(), auth, heroID); err != nil {
-		HandlePgxError(c, err)
-		return "", nil, false
-	}
-	return urlType, &classifierScope{
-		auth:       auth,
-		heroID:     &heroID,
-		invalidate: func(ctx context.Context, c *gin.Context) { h.invalidateHeroCache(ctx, c, heroID) },
-	}, true
-}
-
 // invalidateBookCache deletes the per-book classifier cache key. Errors logged + swallowed.
 func (h *Handler) invalidateBookCache(ctx context.Context, c *gin.Context, bookID int64) {
 	if h.cache == nil {
 		return
 	}
 	key := fmt.Sprintf("%s%d", classifiersCacheSBPrefix, bookID)
-	if err := h.cache.Delete(ctx, key); err != nil {
-		logger.GetLogger(c).Warn("redis cache delete failed", "key", key, "error", err)
-	}
-}
-
-// invalidateHeroCache deletes the per-hero classifier cache key.
-func (h *Handler) invalidateHeroCache(ctx context.Context, c *gin.Context, heroID int64) {
-	if h.cache == nil {
-		return
-	}
-	key := fmt.Sprintf("%s%d", classifiersCacheHeroPrefix, heroID)
 	if err := h.cache.Delete(ctx, key); err != nil {
 		logger.GetLogger(c).Warn("redis cache delete failed", "key", key, "error", err)
 	}
@@ -372,37 +335,6 @@ func (h *Handler) DeleteBookClassifier(c *gin.Context) {
 // RestoreBookClassifier handles POST /api/v1/homebrew/source-books/:code/:type/:cid/restore.
 func (h *Handler) RestoreBookClassifier(c *gin.Context) {
 	urlType, sc, ok := h.bookPreamble(c)
-	if !ok {
-		return
-	}
-	h.doRestoreClassifier(c, urlType, sc)
-}
-
-// ----------------------------------------------------------------------------
-// Hero-scoped classifier handlers (Phase 4.1 reuse, wired now)
-// ----------------------------------------------------------------------------
-
-// UpsertHeroClassifier handles POST/PUT /api/v1/homebrew/heroes/:id/:type[/:cid].
-func (h *Handler) UpsertHeroClassifier(c *gin.Context) {
-	urlType, sc, ok := h.heroPreamble(c)
-	if !ok {
-		return
-	}
-	h.doUpsertClassifier(c, urlType, sc)
-}
-
-// DeleteHeroClassifier handles DELETE /api/v1/homebrew/heroes/:id/:type/:cid.
-func (h *Handler) DeleteHeroClassifier(c *gin.Context) {
-	urlType, sc, ok := h.heroPreamble(c)
-	if !ok {
-		return
-	}
-	h.doDeleteClassifier(c, urlType, sc)
-}
-
-// RestoreHeroClassifier handles POST /api/v1/homebrew/heroes/:id/:type/:cid/restore.
-func (h *Handler) RestoreHeroClassifier(c *gin.Context) {
-	urlType, sc, ok := h.heroPreamble(c)
 	if !ok {
 		return
 	}

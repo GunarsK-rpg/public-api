@@ -23,9 +23,5 @@ func TestRegisterHomebrewRoutes_MountsAllEndpoints(t *testing.T) {
 		"PUT /homebrew/source-books/:code/:type/:cid",
 		"POST /homebrew/source-books/:code/:type/:cid/restore",
 		"DELETE /homebrew/source-books/:code/:type/:cid",
-		"POST /homebrew/heroes/:id/:type",
-		"PUT /homebrew/heroes/:id/:type/:cid",
-		"POST /homebrew/heroes/:id/:type/:cid/restore",
-		"DELETE /homebrew/heroes/:id/:type/:cid",
 	})
 }

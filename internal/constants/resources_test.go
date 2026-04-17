@@ -9,7 +9,7 @@ func TestClassifierTypeSuffix(t *testing.T) {
 		"talents":           "talent",
 		"path-types":        "path_type",
 		"ancestry-subtypes": "ancestry_subtype",
-		"equipment":         "equipment",
+		"equipments":        "equipment",
 		"starting-kits":     "starting_kit",
 	}
 	for url, want := range cases {
@@ -19,7 +19,7 @@ func TestClassifierTypeSuffix(t *testing.T) {
 		}
 	}
 
-	for _, bad := range []string{"", "widgets", "talent", "TALENTS", "../../etc/passwd", "talents; DROP"} {
+	for _, bad := range []string{"", "widgets", "talent", "equipment", "TALENTS", "../../etc/passwd", "talents; DROP"} {
 		if _, ok := ClassifierTypeSuffix(bad); ok {
 			t.Errorf("ClassifierTypeSuffix(%q) ok=true, want false", bad)
 		}
@@ -31,7 +31,7 @@ func TestClassifierTableName(t *testing.T) {
 		"talents":           "cl_talents",
 		"path-types":        "cl_path_types",
 		"ancestry-subtypes": "cl_ancestry_subtypes",
-		"equipment":         "cl_equipments",
+		"equipments":        "cl_equipments",
 		"starting-kits":     "cl_starting_kits",
 	}
 	for url, want := range cases {
@@ -41,7 +41,9 @@ func TestClassifierTableName(t *testing.T) {
 		}
 	}
 
-	if _, ok := ClassifierTableName("widgets"); ok {
-		t.Error("ClassifierTableName(widgets) ok=true, want false")
+	for _, bad := range []string{"widgets", "equipment"} {
+		if _, ok := ClassifierTableName(bad); ok {
+			t.Errorf("ClassifierTableName(%q) ok=true, want false", bad)
+		}
 	}
 }
