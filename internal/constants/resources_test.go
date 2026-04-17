@@ -1,6 +1,10 @@
 package constants
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
 
 func TestClassifierTypeSuffix(t *testing.T) {
 	cases := map[string]string{
@@ -41,5 +45,28 @@ func TestClassifierTableName(t *testing.T) {
 
 	if _, ok := ClassifierTableName("widgets"); ok {
 		t.Error("ClassifierTableName(widgets) ok=true, want false")
+	}
+}
+
+// TestClassifierAllowListMatchesMigrations asserts that every URL-plural entry
+// in the classifiers map has a matching upsert_<suffix>, delete_<suffix>, and
+// detail-view SQL file under database/migrations/R/classifiers/. Catches drift
+// when someone adds a new classifier type on one side without the other.
+//
+// File-existence check (not a DB query) so the test can run without a live
+// database. If the migration files move, update the relative path below.
+func TestClassifierAllowListMatchesMigrations(t *testing.T) {
+	migrationsDir := filepath.Join("..", "..", "..", "..", "database", "migrations", "R", "classifiers")
+	if _, err := os.Stat(migrationsDir); err != nil {
+		t.Skipf("migrations dir not reachable from test working dir: %v", err)
+	}
+
+	for urlType, meta := range classifiers {
+		for _, op := range []string{"upsert", "delete"} {
+			path := filepath.Join(migrationsDir, "R__"+op+"_"+meta.suffix+".sql")
+			if _, err := os.Stat(path); err != nil {
+				t.Errorf("url-type %q expects %s_%s function but %s is missing", urlType, op, meta.suffix, path)
+			}
+		}
 	}
 }

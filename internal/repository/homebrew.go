@@ -16,7 +16,10 @@ type HomebrewRepository interface {
 	UpsertSourceBook(ctx context.Context, auth AuthContext, data json.RawMessage) (json.RawMessage, error)
 	GetSourceBookByCode(ctx context.Context, auth AuthContext, code string) (json.RawMessage, error)
 	DeleteSourceBookByCode(ctx context.Context, auth AuthContext, code string) (bool, error)
-	RestoreSourceBookByCode(ctx context.Context, auth AuthContext, code string) (bool, error)
+	// RestoreSourceBookByCode returns the restored book as JSONB (matching the
+	// upsert_* return-the-row convention). Returns NULL JSONB if already active,
+	// not found, or not owned; handler maps that to 404.
+	RestoreSourceBookByCode(ctx context.Context, auth AuthContext, code string) (json.RawMessage, error)
 
 	// ListMyHomebrewSourceBooks returns the session user's own homebrew books,
 	// including inactive and soft-deleted rows. Used by the Library page.
@@ -27,7 +30,9 @@ type HomebrewRepository interface {
 	// interpolation into SQL.
 	UpsertClassifier(ctx context.Context, auth AuthContext, classifierType string, data json.RawMessage) (json.RawMessage, error)
 	DeleteClassifier(ctx context.Context, auth AuthContext, classifierType string, id int64) (bool, error)
-	RestoreClassifier(ctx context.Context, auth AuthContext, classifierType string, id int64) (bool, error)
+	// RestoreClassifier returns the restored row as JSONB via its detail view.
+	// NULL JSONB means already active or not found; handler maps to 404.
+	RestoreClassifier(ctx context.Context, auth AuthContext, classifierType string, id int64) (json.RawMessage, error)
 
 	// IsClassifierInScope reports whether a classifier row's scope matches
 	// (sourceBookID, heroID). Either bound may be nil; nil matches nil.
@@ -52,12 +57,13 @@ func (r *repository) DeleteSourceBookByCode(ctx context.Context, auth AuthContex
 	return r.execFunc(ctx, auth, "SELECT classifiers.delete_source_book($1::uuid)", code)
 }
 
-func (r *repository) RestoreSourceBookByCode(ctx context.Context, auth AuthContext, code string) (bool, error) {
-	return r.execFunc(ctx, auth, "SELECT classifiers.restore_source_book($1::uuid)", code)
+func (r *repository) RestoreSourceBookByCode(ctx context.Context, auth AuthContext, code string) (json.RawMessage, error) {
+	return r.callFunc(ctx, auth, "SELECT classifiers.restore_source_book($1::uuid)", code)
 }
 
 func (r *repository) ListMyHomebrewSourceBooks(ctx context.Context, auth AuthContext) (json.RawMessage, error) {
-	return r.callFunc(ctx, auth, `SELECT classifiers.get_source_books('{"includeInactive": true}'::jsonb)`)
+	return r.callFunc(ctx, auth,
+		`SELECT classifiers.get_source_books('{"includeInactive": true, "includeDeleted": true}'::jsonb)`)
 }
 
 func (r *repository) UpsertClassifier(ctx context.Context, auth AuthContext, classifierType string, data json.RawMessage) (json.RawMessage, error) {
@@ -78,12 +84,12 @@ func (r *repository) DeleteClassifier(ctx context.Context, auth AuthContext, cla
 	return r.execFunc(ctx, auth, query, id)
 }
 
-func (r *repository) RestoreClassifier(ctx context.Context, auth AuthContext, classifierType string, id int64) (bool, error) {
+func (r *repository) RestoreClassifier(ctx context.Context, auth AuthContext, classifierType string, id int64) (json.RawMessage, error) {
 	table, ok := constants.ClassifierTableName(classifierType)
 	if !ok {
-		return false, fmt.Errorf("%w: %q", ErrUnknownClassifierType, classifierType)
+		return nil, fmt.Errorf("%w: %q", ErrUnknownClassifierType, classifierType)
 	}
-	return r.execFunc(ctx, auth, "SELECT classifiers.restore_classifier($1, $2)", table, id)
+	return r.callFunc(ctx, auth, "SELECT classifiers.restore_classifier($1, $2)", table, id)
 }
 
 func (r *repository) IsClassifierInScope(ctx context.Context, auth AuthContext, classifierType string, id int64, sourceBookID, heroID *int64) (bool, error) {
