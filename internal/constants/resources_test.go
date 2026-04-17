@@ -49,14 +49,14 @@ func TestClassifierTableName(t *testing.T) {
 }
 
 // TestClassifierAllowListMatchesMigrations asserts that every URL-plural entry
-// in the classifiers map has a matching upsert_<suffix>, delete_<suffix>, and
-// detail-view SQL file under database/migrations/R/classifiers/. Catches drift
-// when someone adds a new classifier type on one side without the other.
+// in the classifiers map has a matching upsert_<suffix> and delete_<suffix>
+// SQL file under database/migrations/R/classifiers/. Catches drift when
+// someone adds a new classifier type on one side without the other.
 //
 // File-existence check (not a DB query) so the test can run without a live
 // database. If the migration files move, update the relative path below.
 func TestClassifierAllowListMatchesMigrations(t *testing.T) {
-	migrationsDir := filepath.Join("..", "..", "..", "..", "database", "migrations", "R", "classifiers")
+	migrationsDir := filepath.Join("..", "..", "..", "database", "migrations", "R", "classifiers")
 	if _, err := os.Stat(migrationsDir); err != nil {
 		t.Skipf("migrations dir not reachable from test working dir: %v", err)
 	}
