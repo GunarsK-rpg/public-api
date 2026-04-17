@@ -45,6 +45,9 @@ func HandlePgxError(c *gin.Context, err error) {
 		case "P0001": // raise_exception (validation errors)
 			commonHandlers.LogAndRespondError(c, http.StatusBadRequest, err, pgErr.Message)
 			return
+		case "55000": // object_not_in_prerequisite_state (e.g. soft-deleted row)
+			commonHandlers.LogAndRespondError(c, http.StatusConflict, err, pgErr.Message)
+			return
 		}
 	}
 
