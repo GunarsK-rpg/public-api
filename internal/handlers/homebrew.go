@@ -203,17 +203,17 @@ func (h *Handler) doRestoreClassifier(c *gin.Context, urlType string, sc *classi
 	if !ok {
 		return
 	}
-	restored, err := h.repo.RestoreClassifier(c.Request.Context(), sc.auth, urlType, cid)
+	result, err := h.repo.RestoreClassifier(c.Request.Context(), sc.auth, urlType, cid)
 	if err != nil {
 		HandlePgxError(c, err)
 		return
 	}
-	if !restored {
+	if result == nil || string(result) == "null" {
 		commonHandlers.RespondError(c, http.StatusNotFound, "not found or already active")
 		return
 	}
 	sc.invalidate(c.Request.Context(), c)
-	c.Status(http.StatusNoContent)
+	c.Data(http.StatusOK, "application/json", result)
 }
 
 // requireCidInScope parses :cid and verifies the classifier belongs to the
@@ -288,20 +288,8 @@ func (h *Handler) ListMyHomebrewSourceBooks(c *gin.Context) {
 }
 
 // DeleteSourceBook handles DELETE /api/v1/homebrew/source-books/:code (soft).
+// Returns 204 No Content on success (HTTP DELETE convention; frontend refetches).
 func (h *Handler) DeleteSourceBook(c *gin.Context) {
-	h.sourceBookBoolOp(c, h.repo.DeleteSourceBookByCode, "not found")
-}
-
-// RestoreSourceBook handles POST /api/v1/homebrew/source-books/:code/restore.
-func (h *Handler) RestoreSourceBook(c *gin.Context) {
-	h.sourceBookBoolOp(c, h.repo.RestoreSourceBookByCode, "not found or already active")
-}
-
-func (h *Handler) sourceBookBoolOp(
-	c *gin.Context,
-	op func(context.Context, repository.AuthContext, string) (bool, error),
-	notFoundMsg string,
-) {
 	auth, ok := h.requireAuth(c)
 	if !ok {
 		return
@@ -315,17 +303,48 @@ func (h *Handler) sourceBookBoolOp(
 	if !ok {
 		return
 	}
-	changed, err := op(c.Request.Context(), auth, code)
+	changed, err := h.repo.DeleteSourceBookByCode(c.Request.Context(), auth, code)
 	if err != nil {
 		HandlePgxError(c, err)
 		return
 	}
 	if !changed {
-		commonHandlers.RespondError(c, http.StatusNotFound, notFoundMsg)
+		commonHandlers.RespondError(c, http.StatusNotFound, "not found")
 		return
 	}
 	h.invalidateBookCache(c.Request.Context(), c, bookID)
 	c.Status(http.StatusNoContent)
+}
+
+// RestoreSourceBook handles POST /api/v1/homebrew/source-books/:code/restore.
+// Returns 200 with the restored book JSONB so the client can update its
+// list/currentBook state without a second GET. Matches the upsert_* return
+// convention.
+func (h *Handler) RestoreSourceBook(c *gin.Context) {
+	auth, ok := h.requireAuth(c)
+	if !ok {
+		return
+	}
+	code := c.Param("code")
+	if code == "" {
+		commonHandlers.RespondError(c, http.StatusBadRequest, "missing path parameter: code")
+		return
+	}
+	bookID, ok := h.resolveSourceBookIDByCode(c, auth, code)
+	if !ok {
+		return
+	}
+	result, err := h.repo.RestoreSourceBookByCode(c.Request.Context(), auth, code)
+	if err != nil {
+		HandlePgxError(c, err)
+		return
+	}
+	if result == nil || string(result) == "null" {
+		commonHandlers.RespondError(c, http.StatusNotFound, "not found or already active")
+		return
+	}
+	h.invalidateBookCache(c.Request.Context(), c, bookID)
+	c.Data(http.StatusOK, "application/json", result)
 }
 
 // ----------------------------------------------------------------------------
@@ -401,14 +420,11 @@ func injectScope(raw json.RawMessage, sourceBookID, heroID *int64) (json.RawMess
 		return nil, fmt.Errorf("injectScope: exactly one of sourceBookID or heroID must be set")
 	}
 
-	var obj map[string]json.RawMessage
-	if len(raw) == 0 {
-		obj = map[string]json.RawMessage{}
-	} else if err := json.Unmarshal(raw, &obj); err != nil {
-		return nil, fmt.Errorf("payload must be a JSON object: %w", err)
-	}
-	if obj == nil {
-		obj = map[string]json.RawMessage{}
+	obj := map[string]json.RawMessage{}
+	if len(raw) > 0 {
+		if err := json.Unmarshal(raw, &obj); err != nil {
+			return nil, fmt.Errorf("payload must be a JSON object: %w", err)
+		}
 	}
 
 	if sourceBookID != nil {

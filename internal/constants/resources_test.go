@@ -1,6 +1,8 @@
 package constants
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestClassifierTypeSuffix(t *testing.T) {
 	cases := map[string]string{

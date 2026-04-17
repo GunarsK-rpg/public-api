@@ -4,12 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"testing"
 
+	"github.com/alicebob/miniredis/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/redis/go-redis/v9"
 
+	"github.com/GunarsK-rpg/public-api/internal/cache"
 	"github.com/GunarsK-rpg/public-api/internal/repository"
 )
 
@@ -229,8 +233,8 @@ func TestRestoreSourceBook_Success(t *testing.T) {
 		getSourceBookByCodeFunc: func(_ context.Context, _ repository.AuthContext, _ string) (json.RawMessage, error) {
 			return json.RawMessage(`{"id":3}`), nil
 		},
-		restoreSourceBookByCodeFunc: func(_ context.Context, _ repository.AuthContext, _ string) (bool, error) {
-			return true, nil
+		restoreSourceBookByCodeFunc: func(_ context.Context, _ repository.AuthContext, _ string) (json.RawMessage, error) {
+			return json.RawMessage(`{"id":3,"name":"Restored","deletedAt":null}`), nil
 		},
 	}
 	handler := New(mock, nil)
@@ -241,8 +245,33 @@ func TestRestoreSourceBook_Success(t *testing.T) {
 	})
 
 	w := performRequest(t, router, "POST", "/homebrew/source-books/abc/restore", nil)
-	if w.Code != http.StatusNoContent {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNoContent)
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d (body=%s)", w.Code, http.StatusOK, w.Body.String())
+	}
+	if got, want := w.Body.String(), `{"id":3,"name":"Restored","deletedAt":null}`; got != want {
+		t.Errorf("body = %s, want %s", got, want)
+	}
+}
+
+func TestRestoreSourceBook_NotFound(t *testing.T) {
+	mock := &mockRepo{
+		getSourceBookByCodeFunc: func(_ context.Context, _ repository.AuthContext, _ string) (json.RawMessage, error) {
+			return json.RawMessage(`{"id":3}`), nil
+		},
+		restoreSourceBookByCodeFunc: func(_ context.Context, _ repository.AuthContext, _ string) (json.RawMessage, error) {
+			return json.RawMessage(`null`), nil
+		},
+	}
+	handler := New(mock, nil)
+	router := gin.New()
+	router.POST("/homebrew/source-books/:code/restore", func(c *gin.Context) {
+		withAuth(c)
+		handler.RestoreSourceBook(c)
+	})
+
+	w := performRequest(t, router, "POST", "/homebrew/source-books/abc/restore", nil)
+	if w.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
 	}
 }
 
@@ -384,8 +413,8 @@ func TestRestoreBookClassifier_Success(t *testing.T) {
 		isClassifierInScopeFunc: func(_ context.Context, _ repository.AuthContext, _ string, _ int64, _, _ *int64) (bool, error) {
 			return true, nil
 		},
-		restoreClassifierFunc: func(_ context.Context, _ repository.AuthContext, _ string, _ int64) (bool, error) {
-			return true, nil
+		restoreClassifierFunc: func(_ context.Context, _ repository.AuthContext, _ string, _ int64) (json.RawMessage, error) {
+			return json.RawMessage(`{"id":5,"deletedAt":null}`), nil
 		},
 	}
 	handler := New(mock, nil)
@@ -396,8 +425,11 @@ func TestRestoreBookClassifier_Success(t *testing.T) {
 	})
 
 	w := performRequest(t, router, "POST", "/homebrew/source-books/abc/talents/5/restore", nil)
-	if w.Code != http.StatusNoContent {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNoContent)
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d (body=%s)", w.Code, http.StatusOK, w.Body.String())
+	}
+	if got, want := w.Body.String(), `{"id":5,"deletedAt":null}`; got != want {
+		t.Errorf("body = %s, want %s", got, want)
 	}
 }
 
@@ -485,8 +517,8 @@ func TestRestoreHeroClassifier_Success(t *testing.T) {
 		isClassifierInScopeFunc: func(_ context.Context, _ repository.AuthContext, _ string, _ int64, _, _ *int64) (bool, error) {
 			return true, nil
 		},
-		restoreClassifierFunc: func(_ context.Context, _ repository.AuthContext, _ string, _ int64) (bool, error) {
-			return true, nil
+		restoreClassifierFunc: func(_ context.Context, _ repository.AuthContext, _ string, _ int64) (json.RawMessage, error) {
+			return json.RawMessage(`{"id":5,"deletedAt":null}`), nil
 		},
 	}
 	handler := New(mock, nil)
@@ -497,8 +529,11 @@ func TestRestoreHeroClassifier_Success(t *testing.T) {
 	})
 
 	w := performRequest(t, router, "POST", "/homebrew/heroes/7/talents/5/restore", nil)
-	if w.Code != http.StatusNoContent {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNoContent)
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d (body=%s)", w.Code, http.StatusOK, w.Body.String())
+	}
+	if got, want := w.Body.String(), `{"id":5,"deletedAt":null}`; got != want {
+		t.Errorf("body = %s, want %s", got, want)
 	}
 }
 
@@ -551,5 +586,115 @@ func TestHandleDeleteByString_RepoError(t *testing.T) {
 	w := performRequest(t, router, "DELETE", "/items/x", nil)
 	if w.Code != http.StatusInternalServerError {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
+	}
+}
+
+// =============================================================================
+// Cache invalidation (P5)
+// =============================================================================
+
+func newCacheWithMiniredis(t *testing.T) (*cache.Cache, *miniredis.Miniredis) {
+	t.Helper()
+	mr := miniredis.RunT(t)
+	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	return cache.New(client), mr
+}
+
+func TestCacheInvalidation_UpsertBookClassifier(t *testing.T) {
+	c, mr := newCacheWithMiniredis(t)
+	bookID := int64(42)
+	key := fmt.Sprintf("rpg:classifiers:sb:%d", bookID)
+	if err := mr.Set(key, `{"cached":"value"}`); err != nil {
+		t.Fatal(err)
+	}
+
+	mock := &mockRepo{
+		getSourceBookByCodeFunc: func(_ context.Context, _ repository.AuthContext, _ string) (json.RawMessage, error) {
+			return json.RawMessage(fmt.Sprintf(`{"id":%d}`, bookID)), nil
+		},
+		upsertClassifierFunc: func(_ context.Context, _ repository.AuthContext, _ string, _ json.RawMessage) (json.RawMessage, error) {
+			return json.RawMessage(`{"id":7}`), nil
+		},
+	}
+	handler := New(mock, c)
+	router := gin.New()
+	router.POST("/homebrew/source-books/:code/:type", func(ctx *gin.Context) {
+		withAuth(ctx)
+		handler.UpsertBookClassifier(ctx)
+	})
+
+	w := performRequest(t, router, "POST", "/homebrew/source-books/abc/talents", []byte(`{"name":"X"}`))
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", w.Code, w.Body.String())
+	}
+	if mr.Exists(key) {
+		t.Errorf("cache key %q should have been deleted after write", key)
+	}
+}
+
+func TestCacheInvalidation_DeleteSourceBook(t *testing.T) {
+	c, mr := newCacheWithMiniredis(t)
+	bookID := int64(9)
+	key := fmt.Sprintf("rpg:classifiers:sb:%d", bookID)
+	if err := mr.Set(key, `{"cached":"value"}`); err != nil {
+		t.Fatal(err)
+	}
+
+	mock := &mockRepo{
+		getSourceBookByCodeFunc: func(_ context.Context, _ repository.AuthContext, _ string) (json.RawMessage, error) {
+			return json.RawMessage(fmt.Sprintf(`{"id":%d}`, bookID)), nil
+		},
+		deleteSourceBookByCodeFunc: func(_ context.Context, _ repository.AuthContext, _ string) (bool, error) {
+			return true, nil
+		},
+	}
+	handler := New(mock, c)
+	router := gin.New()
+	router.DELETE("/homebrew/source-books/:code", func(ctx *gin.Context) {
+		withAuth(ctx)
+		handler.DeleteSourceBook(ctx)
+	})
+
+	w := performRequest(t, router, "DELETE", "/homebrew/source-books/abc", nil)
+	if w.Code != http.StatusNoContent {
+		t.Fatalf("status = %d, body = %s", w.Code, w.Body.String())
+	}
+	if mr.Exists(key) {
+		t.Errorf("cache key %q should have been deleted after soft-delete", key)
+	}
+}
+
+func TestCacheInvalidation_RestoreSourceBookReturnsBody(t *testing.T) {
+	c, mr := newCacheWithMiniredis(t)
+	bookID := int64(11)
+	key := fmt.Sprintf("rpg:classifiers:sb:%d", bookID)
+	if err := mr.Set(key, `{"cached":"value"}`); err != nil {
+		t.Fatal(err)
+	}
+
+	mock := &mockRepo{
+		getSourceBookByCodeFunc: func(_ context.Context, _ repository.AuthContext, _ string) (json.RawMessage, error) {
+			return json.RawMessage(fmt.Sprintf(`{"id":%d}`, bookID)), nil
+		},
+		restoreSourceBookByCodeFunc: func(_ context.Context, _ repository.AuthContext, _ string) (json.RawMessage, error) {
+			return json.RawMessage(`{"id":11,"deletedAt":null}`), nil
+		},
+	}
+	handler := New(mock, c)
+	router := gin.New()
+	router.POST("/homebrew/source-books/:code/restore", func(ctx *gin.Context) {
+		withAuth(ctx)
+		handler.RestoreSourceBook(ctx)
+	})
+
+	w := performRequest(t, router, "POST", "/homebrew/source-books/abc/restore", nil)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", w.Code, w.Body.String())
+	}
+	if got, want := w.Body.String(), `{"id":11,"deletedAt":null}`; got != want {
+		t.Errorf("body = %s, want %s", got, want)
+	}
+	if mr.Exists(key) {
+		t.Errorf("cache key %q should have been deleted after restore", key)
 	}
 }

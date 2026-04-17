@@ -131,11 +131,11 @@ type mockRepo struct {
 	upsertSourceBookFunc          func(ctx context.Context, auth repository.AuthContext, data json.RawMessage) (json.RawMessage, error)
 	getSourceBookByCodeFunc       func(ctx context.Context, auth repository.AuthContext, code string) (json.RawMessage, error)
 	deleteSourceBookByCodeFunc    func(ctx context.Context, auth repository.AuthContext, code string) (bool, error)
-	restoreSourceBookByCodeFunc   func(ctx context.Context, auth repository.AuthContext, code string) (bool, error)
+	restoreSourceBookByCodeFunc   func(ctx context.Context, auth repository.AuthContext, code string) (json.RawMessage, error)
 	listMyHomebrewSourceBooksFunc func(ctx context.Context, auth repository.AuthContext) (json.RawMessage, error)
 	upsertClassifierFunc          func(ctx context.Context, auth repository.AuthContext, classifierType string, data json.RawMessage) (json.RawMessage, error)
 	deleteClassifierFunc          func(ctx context.Context, auth repository.AuthContext, classifierType string, id int64) (bool, error)
-	restoreClassifierFunc         func(ctx context.Context, auth repository.AuthContext, classifierType string, id int64) (bool, error)
+	restoreClassifierFunc         func(ctx context.Context, auth repository.AuthContext, classifierType string, id int64) (json.RawMessage, error)
 	isClassifierInScopeFunc       func(ctx context.Context, auth repository.AuthContext, classifierType string, id int64, sourceBookID, heroID *int64) (bool, error)
 }
 
@@ -828,11 +828,11 @@ func (m *mockRepo) DeleteSourceBookByCode(ctx context.Context, auth repository.A
 	return false, errNotImplemented
 }
 
-func (m *mockRepo) RestoreSourceBookByCode(ctx context.Context, auth repository.AuthContext, code string) (bool, error) {
+func (m *mockRepo) RestoreSourceBookByCode(ctx context.Context, auth repository.AuthContext, code string) (json.RawMessage, error) {
 	if m.restoreSourceBookByCodeFunc != nil {
 		return m.restoreSourceBookByCodeFunc(ctx, auth, code)
 	}
-	return false, errNotImplemented
+	return nil, errNotImplemented
 }
 
 func (m *mockRepo) ListMyHomebrewSourceBooks(ctx context.Context, auth repository.AuthContext) (json.RawMessage, error) {
@@ -856,11 +856,11 @@ func (m *mockRepo) DeleteClassifier(ctx context.Context, auth repository.AuthCon
 	return false, errNotImplemented
 }
 
-func (m *mockRepo) RestoreClassifier(ctx context.Context, auth repository.AuthContext, classifierType string, id int64) (bool, error) {
+func (m *mockRepo) RestoreClassifier(ctx context.Context, auth repository.AuthContext, classifierType string, id int64) (json.RawMessage, error) {
 	if m.restoreClassifierFunc != nil {
 		return m.restoreClassifierFunc(ctx, auth, classifierType, id)
 	}
-	return false, errNotImplemented
+	return nil, errNotImplemented
 }
 
 func (m *mockRepo) IsClassifierInScope(ctx context.Context, auth repository.AuthContext, classifierType string, id int64, sourceBookID, heroID *int64) (bool, error) {
