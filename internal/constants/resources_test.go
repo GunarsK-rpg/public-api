@@ -58,7 +58,7 @@ func TestClassifierTableName(t *testing.T) {
 func TestClassifierAllowListMatchesMigrations(t *testing.T) {
 	migrationsDir := filepath.Join("..", "..", "..", "database", "migrations", "R", "classifiers")
 	if _, err := os.Stat(migrationsDir); err != nil {
-		t.Skipf("migrations dir not reachable from test working dir: %v", err)
+		t.Fatalf("migrations dir not reachable from test working dir: %v", err)
 	}
 
 	for urlType, meta := range classifiers {
