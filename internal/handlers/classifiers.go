@@ -44,12 +44,6 @@ func (h *Handler) GetAllClassifiers(c *gin.Context) {
 		return
 	}
 
-	global, err := h.fetchClassifiers(c, auth, classifiersCacheGlobalKey, nil, nil)
-	if err != nil {
-		HandlePgxError(c, err)
-		return
-	}
-
 	sourceBooks := make([]json.RawMessage, 0)
 	if query.CampaignID != nil {
 		sbIDs, err := h.repo.GetCampaignSourceBookIDs(c.Request.Context(), auth, *query.CampaignID)
@@ -79,11 +73,18 @@ func (h *Handler) GetAllClassifiers(c *gin.Context) {
 	var hero json.RawMessage
 	if query.HeroID != nil {
 		cacheKey := fmt.Sprintf("%s%d", classifiersCacheHeroPrefix, *query.HeroID)
+		var err error
 		hero, err = h.fetchClassifiers(c, auth, cacheKey, nil, query.HeroID)
 		if err != nil {
 			HandlePgxError(c, err)
 			return
 		}
+	}
+
+	global, err := h.fetchClassifiers(c, auth, classifiersCacheGlobalKey, nil, nil)
+	if err != nil {
+		HandlePgxError(c, err)
+		return
 	}
 
 	sbJSON, _ := json.Marshal(sourceBooks)

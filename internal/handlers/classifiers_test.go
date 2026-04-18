@@ -276,6 +276,9 @@ func TestGetAllClassifiers_WithCampaignID(t *testing.T) {
 			}
 			return []int64{10}, nil
 		},
+		requireSourceBookAccessibleFunc: func(_ context.Context, _ repository.AuthContext, _ int64) error {
+			return nil
+		},
 		getClassifiersFilteredFunc: func(_ context.Context, _ repository.AuthContext, filter json.RawMessage) (json.RawMessage, error) {
 			if string(filter) == `{"sourceBookId": null}` {
 				return globalData, nil
@@ -313,6 +316,9 @@ func TestGetAllClassifiers_WithHeroID(t *testing.T) {
 	globalData := json.RawMessage(`{"skills":[1]}`)
 	heroData := json.RawMessage(`{"skills":[2]}`)
 	mock := &mockRepo{
+		validateHeroAccessFunc: func(_ context.Context, _ repository.AuthContext, _ int64) error {
+			return nil
+		},
 		getClassifiersFilteredFunc: func(_ context.Context, _ repository.AuthContext, filter json.RawMessage) (json.RawMessage, error) {
 			if string(filter) == `{"sourceBookId": null}` {
 				return globalData, nil

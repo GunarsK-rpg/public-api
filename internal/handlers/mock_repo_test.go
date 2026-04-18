@@ -164,7 +164,7 @@ func (m *mockRepo) ValidateHeroAccess(ctx context.Context, auth repository.AuthC
 	if m.validateHeroAccessFunc != nil {
 		return m.validateHeroAccessFunc(ctx, auth, heroID)
 	}
-	return nil
+	return errNotImplemented
 }
 
 // =============================================================================
@@ -875,5 +875,5 @@ func (m *mockRepo) RequireSourceBookAccessible(ctx context.Context, auth reposit
 	if m.requireSourceBookAccessibleFunc != nil {
 		return m.requireSourceBookAccessibleFunc(ctx, auth, sourceBookID)
 	}
-	return nil
+	return errNotImplemented
 }
