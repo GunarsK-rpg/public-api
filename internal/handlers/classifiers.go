@@ -12,6 +12,7 @@ import (
 	"github.com/GunarsK-portfolio/portfolio-common/logger"
 
 	"github.com/GunarsK-rpg/public-api/internal/models/requests"
+	"github.com/GunarsK-rpg/public-api/internal/repository"
 )
 
 const (
@@ -26,9 +27,7 @@ func (h *Handler) GetSourceBooks(c *gin.Context) {
 	handleGet(c, h.repo.GetSourceBooks)
 }
 
-// GetAllClassifiers returns classifiers scoped by optional campaignId and/or heroId.
-// Always returns {"global": {...}, "sourceBooks": [...], "hero": {...}}.
-// Global classifiers are always included. Source books and hero layers added when params provided.
+// GetAllClassifiers returns classifiers scoped by optional campaignId, heroId or sourceBookId.
 func (h *Handler) GetAllClassifiers(c *gin.Context) {
 	var query requests.GetClassifiersQuery
 	if err := c.ShouldBindQuery(&query); err != nil {
@@ -40,32 +39,20 @@ func (h *Handler) GetAllClassifiers(c *gin.Context) {
 		return
 	}
 
-	// Always fetch global classifiers (unscoped + global scoped)
-	global, err := h.fetchClassifiers(c, classifiersCacheGlobalKey, `{"sourceBookId": null}`)
-	if err != nil {
-		HandlePgxError(c, err)
+	auth, ok := h.requireAuth(c)
+	if !ok {
 		return
 	}
 
-	// Fetch campaign source books if campaignId provided
 	sourceBooks := make([]json.RawMessage, 0)
 	if query.CampaignID != nil {
-		auth, err := GetAuthContext(c)
-		if err != nil {
-			commonHandlers.RespondError(c, http.StatusUnauthorized, "unauthorized")
-			return
-		}
 		sbIDs, err := h.repo.GetCampaignSourceBookIDs(c.Request.Context(), auth, *query.CampaignID)
 		if err != nil {
 			HandlePgxError(c, err)
 			return
 		}
-
 		for _, sbID := range sbIDs {
-			cacheKey := fmt.Sprintf("%s%d", classifiersCacheSBPrefix, sbID)
-			filter := fmt.Sprintf(`{"sourceBookId": %d}`, sbID)
-
-			sbData, err := h.fetchClassifiers(c, cacheKey, filter)
+			sbData, err := h.fetchSourceBookClassifiers(c, auth, sbID)
 			if err != nil {
 				HandlePgxError(c, err)
 				return
@@ -74,30 +61,32 @@ func (h *Handler) GetAllClassifiers(c *gin.Context) {
 		}
 	}
 
-	// Fetch hero classifiers if heroId provided
-	var hero json.RawMessage
-	if query.HeroID != nil {
-		auth, err := GetAuthContext(c)
+	if query.SourceBookID != nil {
+		sbData, err := h.fetchSourceBookClassifiers(c, auth, *query.SourceBookID)
 		if err != nil {
-			commonHandlers.RespondError(c, http.StatusUnauthorized, "unauthorized")
-			return
-		}
-		if err := h.repo.ValidateHeroAccess(c.Request.Context(), auth, *query.HeroID); err != nil {
 			HandlePgxError(c, err)
 			return
 		}
+		sourceBooks = append(sourceBooks, sbData)
+	}
 
+	var hero json.RawMessage
+	if query.HeroID != nil {
 		cacheKey := fmt.Sprintf("%s%d", classifiersCacheHeroPrefix, *query.HeroID)
-		filter := fmt.Sprintf(`{"heroId": %d}`, *query.HeroID)
-
-		hero, err = h.fetchClassifiers(c, cacheKey, filter)
+		var err error
+		hero, err = h.fetchClassifiers(c, auth, cacheKey, nil, query.HeroID)
 		if err != nil {
 			HandlePgxError(c, err)
 			return
 		}
 	}
 
-	// Build response
+	global, err := h.fetchClassifiers(c, auth, classifiersCacheGlobalKey, nil, nil)
+	if err != nil {
+		HandlePgxError(c, err)
+		return
+	}
+
 	sbJSON, _ := json.Marshal(sourceBooks)
 	if hero == nil {
 		hero = json.RawMessage(`{}`)
@@ -107,10 +96,32 @@ func (h *Handler) GetAllClassifiers(c *gin.Context) {
 	c.Data(http.StatusOK, "application/json", result)
 }
 
-// fetchClassifiers returns classifiers from Redis cache or DB, caching on miss.
-func (h *Handler) fetchClassifiers(c *gin.Context, cacheKey string, filter string) (json.RawMessage, error) {
+func (h *Handler) fetchSourceBookClassifiers(c *gin.Context, auth repository.AuthContext, sbID int64) (json.RawMessage, error) {
+	cacheKey := fmt.Sprintf("%s%d", classifiersCacheSBPrefix, sbID)
+	return h.fetchClassifiers(c, auth, cacheKey, &sbID, nil)
+}
+
+// fetchClassifiers gates the cache by filter scope, then returns from Redis or DB.
+func (h *Handler) fetchClassifiers(
+	c *gin.Context,
+	auth repository.AuthContext,
+	cacheKey string,
+	sourceBookID *int64,
+	heroID *int64,
+) (json.RawMessage, error) {
 	ctx := c.Request.Context()
 	log := logger.GetLogger(c)
+
+	if sourceBookID != nil {
+		if err := h.repo.RequireSourceBookAccessible(ctx, auth, *sourceBookID); err != nil {
+			return nil, err
+		}
+	}
+	if heroID != nil {
+		if err := h.repo.ValidateHeroAccess(ctx, auth, *heroID); err != nil {
+			return nil, err
+		}
+	}
 
 	if h.cache != nil {
 		cached, err := h.cache.Get(ctx, cacheKey)
@@ -122,12 +133,7 @@ func (h *Handler) fetchClassifiers(c *gin.Context, cacheKey string, filter strin
 		}
 	}
 
-	auth, err := GetAuthContext(c)
-	if err != nil {
-		return nil, err
-	}
-
-	result, err := h.repo.GetClassifiersFiltered(ctx, auth, json.RawMessage(filter))
+	result, err := h.repo.GetClassifiersFiltered(ctx, auth, buildClassifierFilter(sourceBookID, heroID))
 	if err != nil {
 		return nil, err
 	}
@@ -139,4 +145,15 @@ func (h *Handler) fetchClassifiers(c *gin.Context, cacheKey string, filter strin
 	}
 
 	return result, nil
+}
+
+func buildClassifierFilter(sourceBookID, heroID *int64) json.RawMessage {
+	switch {
+	case sourceBookID != nil:
+		return json.RawMessage(fmt.Sprintf(`{"sourceBookId": %d}`, *sourceBookID))
+	case heroID != nil:
+		return json.RawMessage(fmt.Sprintf(`{"heroId": %d}`, *heroID))
+	default:
+		return json.RawMessage(`{"sourceBookId": null}`)
+	}
 }
