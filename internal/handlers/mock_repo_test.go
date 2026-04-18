@@ -12,9 +12,10 @@ import (
 // Each method delegates to a function field; returns "not implemented" if nil.
 type mockRepo struct {
 	// Classifiers
-	getClassifiersFilteredFunc func(ctx context.Context, auth repository.AuthContext, filter json.RawMessage) (json.RawMessage, error)
-	getSourceBooksFunc         func(ctx context.Context, auth repository.AuthContext) (json.RawMessage, error)
-	validateHeroAccessFunc     func(ctx context.Context, auth repository.AuthContext, heroID int64) error
+	getClassifiersFilteredFunc      func(ctx context.Context, auth repository.AuthContext, filter json.RawMessage) (json.RawMessage, error)
+	getSourceBooksFunc              func(ctx context.Context, auth repository.AuthContext) (json.RawMessage, error)
+	validateHeroAccessFunc          func(ctx context.Context, auth repository.AuthContext, heroID int64) error
+	requireSourceBookAccessibleFunc func(ctx context.Context, auth repository.AuthContext, sourceBookID int64) error
 
 	// Heroes - Core CRUD
 	getHeroesFunc    func(ctx context.Context, auth repository.AuthContext, campaignID *int64) (json.RawMessage, error)
@@ -868,4 +869,11 @@ func (m *mockRepo) IsClassifierInScope(ctx context.Context, auth repository.Auth
 		return m.isClassifierInScopeFunc(ctx, auth, classifierType, id, sourceBookID, heroID)
 	}
 	return false, errNotImplemented
+}
+
+func (m *mockRepo) RequireSourceBookAccessible(ctx context.Context, auth repository.AuthContext, sourceBookID int64) error {
+	if m.requireSourceBookAccessibleFunc != nil {
+		return m.requireSourceBookAccessibleFunc(ctx, auth, sourceBookID)
+	}
+	return nil
 }

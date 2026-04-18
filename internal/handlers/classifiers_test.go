@@ -378,6 +378,89 @@ func TestGetAllClassifiers_NoSourceBooks(t *testing.T) {
 	}
 }
 
+func TestGetAllClassifiers_WithSourceBookID_AccessibleSuccess(t *testing.T) {
+	globalData := json.RawMessage(`{"skills":[]}`)
+	sbData := json.RawMessage(`{"ancestries":[{"id":1,"name":"Elf"}]}`)
+	accessCalls := 0
+	mock := &mockRepo{
+		requireSourceBookAccessibleFunc: func(_ context.Context, _ repository.AuthContext, id int64) error {
+			accessCalls++
+			if id != 42 {
+				t.Errorf("sourceBookID = %d, want 42", id)
+			}
+			return nil
+		},
+		getClassifiersFilteredFunc: func(_ context.Context, _ repository.AuthContext, filter json.RawMessage) (json.RawMessage, error) {
+			if string(filter) == `{"sourceBookId": null}` {
+				return globalData, nil
+			}
+			if string(filter) == `{"sourceBookId": 42}` {
+				return sbData, nil
+			}
+			return json.RawMessage(`{}`), nil
+		},
+	}
+	handler := New(mock, nil)
+	router := setupClassifierRouter(handler)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/classifiers?sourceBookId=42", nil)
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+	if accessCalls != 1 {
+		t.Fatalf("expected 1 access check, got %d", accessCalls)
+	}
+
+	var result struct {
+		Global      json.RawMessage   `json:"global"`
+		SourceBooks []json.RawMessage `json:"sourceBooks"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
+		t.Fatalf("failed to parse response: %v", err)
+	}
+	if len(result.SourceBooks) != 1 || string(result.SourceBooks[0]) != string(sbData) {
+		t.Fatalf("sourceBooks = %v, want [%s]", result.SourceBooks, sbData)
+	}
+}
+
+func TestGetAllClassifiers_WithSourceBookID_NotAccessible(t *testing.T) {
+	mock := &mockRepo{
+		requireSourceBookAccessibleFunc: func(_ context.Context, _ repository.AuthContext, _ int64) error {
+			return pgx.ErrNoRows
+		},
+		getClassifiersFilteredFunc: func(_ context.Context, _ repository.AuthContext, _ json.RawMessage) (json.RawMessage, error) {
+			return json.RawMessage(`{}`), nil
+		},
+	}
+	handler := New(mock, nil)
+	router := setupClassifierRouter(handler)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/classifiers?sourceBookId=42", nil)
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("expected 404 on inaccessible book, got %d", w.Code)
+	}
+}
+
+func TestGetAllClassifiers_MutuallyExclusiveScopes(t *testing.T) {
+	mock := &mockRepo{}
+	handler := New(mock, nil)
+	router := setupClassifierRouter(handler)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/classifiers?campaignId=1&sourceBookId=2", nil)
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 for conflicting scopes, got %d", w.Code)
+	}
+}
+
 func TestGetAllClassifiers_CampaignNotFound(t *testing.T) {
 	mock := &mockRepo{
 		getClassifiersFilteredFunc: func(_ context.Context, _ repository.AuthContext, _ json.RawMessage) (json.RawMessage, error) {
