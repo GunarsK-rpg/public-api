@@ -5,7 +5,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/GunarsK-rpg/public-api)](https://goreportcard.com/report/github.com/GunarsK-rpg/public-api)
 [![CodeRabbit](https://img.shields.io/coderabbit/prs/github/GunarsK-rpg/public-api?label=CodeRabbit&color=2ea44f)](https://coderabbit.ai)
 
-RESTful API for the RPG Character Sheet Manager with PostgreSQL stored functions (JSONB passthrough).
+RESTful API for the RPG Character Sheet Manager.
 
 ## Features
 
