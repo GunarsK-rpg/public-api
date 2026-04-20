@@ -1,0 +1,4 @@
+# Enforce LF line endings in the repo and working tree on all platforms.
+# Matches what gofmt / goimports emit, so `task ci:fix` does not produce
+# phantom CRLF diffs on Windows checkouts.
+* text=auto eol=lf
