@@ -118,16 +118,16 @@ jobs:
         id: meta
         run: |
           IMAGE="ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')"
-          echo "image=$IMAGE" >> $GITHUB_OUTPUT
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             TAG="pr-${{ github.event.pull_request.number }}"
-            echo "tags=$IMAGE:$TAG" >> $GITHUB_OUTPUT
+            echo "tags=$IMAGE:$TAG" >> "$GITHUB_OUTPUT"
           else
             SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-            echo "tags=$IMAGE:latest,$IMAGE:sha-$SHORT_SHA" >> $GITHUB_OUTPUT
+            echo "tags=$IMAGE:latest,$IMAGE:sha-$SHORT_SHA" >> "$GITHUB_OUTPUT"
             TAG="sha-$SHORT_SHA"
           fi
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
       - name: Get weekly cache key
         id: week
@@ -274,6 +274,20 @@ jobs:
           go install github.com/gordonklaus/ineffassign@latest
           ineffassign ./...
 
+  # Workflow lint - Validate GitHub Actions workflows
+  workflow-lint:
+    name: Workflow Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install actionlint
+        run: bash <(curl -s https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+
+      - name: Run actionlint
+        run: ./actionlint -color
+
   # Summary job - require all to pass
   ci-success:
     name: CI Success
@@ -288,6 +302,7 @@ jobs:
         secret-scan,
         markdown-lint,
         code-quality,
+        workflow-lint,
       ]
     if: always()
     steps:
