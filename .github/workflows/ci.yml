@@ -274,6 +274,20 @@ jobs:
           go install github.com/gordonklaus/ineffassign@latest
           ineffassign ./...
 
+  # Workflow lint - Validate GitHub Actions workflows
+  workflow-lint:
+    name: Workflow Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install actionlint
+        run: bash <(curl -s https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+
+      - name: Run actionlint
+        run: ./actionlint -color
+
   # Summary job - require all to pass
   ci-success:
     name: CI Success
@@ -288,6 +302,7 @@ jobs:
         secret-scan,
         markdown-lint,
         code-quality,
+        workflow-lint,
       ]
     if: always()
     steps:
