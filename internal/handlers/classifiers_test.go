@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -389,6 +390,9 @@ func TestGetAllClassifiers_WithSourceBookID_AccessibleSuccess(t *testing.T) {
 	sbData := json.RawMessage(`{"ancestries":[{"id":1,"name":"Elf"}]}`)
 	accessCalls := 0
 	mock := &mockRepo{
+		getSourceBookDependencyIDsFunc: func(_ context.Context, _ repository.AuthContext, _ int64) ([]int64, error) {
+			return nil, nil
+		},
 		requireSourceBookAccessibleFunc: func(_ context.Context, _ repository.AuthContext, id int64) error {
 			accessCalls++
 			if id != 42 {
@@ -432,8 +436,68 @@ func TestGetAllClassifiers_WithSourceBookID_AccessibleSuccess(t *testing.T) {
 	}
 }
 
+func TestGetAllClassifiers_WithSourceBookID_FansOutOverDependencies(t *testing.T) {
+	globalData := json.RawMessage(`{"skills":[]}`)
+	sbDataByID := map[int64]json.RawMessage{
+		42: json.RawMessage(`{"book":42}`),
+		7:  json.RawMessage(`{"book":7}`),
+		9:  json.RawMessage(`{"book":9}`),
+	}
+	mock := &mockRepo{
+		getSourceBookDependencyIDsFunc: func(_ context.Context, _ repository.AuthContext, id int64) ([]int64, error) {
+			if id != 42 {
+				t.Errorf("sourceBookID = %d, want 42", id)
+			}
+			return []int64{7, 9}, nil
+		},
+		requireSourceBookAccessibleFunc: func(_ context.Context, _ repository.AuthContext, _ int64) error {
+			return nil
+		},
+		getClassifiersFilteredFunc: func(_ context.Context, _ repository.AuthContext, filter json.RawMessage) (json.RawMessage, error) {
+			if string(filter) == `{"sourceBookId": null}` {
+				return globalData, nil
+			}
+			for id, data := range sbDataByID {
+				if string(filter) == fmt.Sprintf(`{"sourceBookId": %d}`, id) {
+					return data, nil
+				}
+			}
+			return json.RawMessage(`{}`), nil
+		},
+	}
+	handler := New(mock, nil)
+	router := setupClassifierRouter(handler)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/classifiers?sourceBookId=42", nil)
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var result struct {
+		SourceBooks []json.RawMessage `json:"sourceBooks"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
+		t.Fatalf("failed to parse response: %v", err)
+	}
+	if len(result.SourceBooks) != 3 {
+		t.Fatalf("sourceBooks length = %d, want 3", len(result.SourceBooks))
+	}
+	want := []string{string(sbDataByID[42]), string(sbDataByID[7]), string(sbDataByID[9])}
+	for i, w := range want {
+		if string(result.SourceBooks[i]) != w {
+			t.Errorf("sourceBooks[%d] = %s, want %s", i, result.SourceBooks[i], w)
+		}
+	}
+}
+
 func TestGetAllClassifiers_WithSourceBookID_NotAccessible(t *testing.T) {
 	mock := &mockRepo{
+		getSourceBookDependencyIDsFunc: func(_ context.Context, _ repository.AuthContext, _ int64) ([]int64, error) {
+			return nil, nil
+		},
 		requireSourceBookAccessibleFunc: func(_ context.Context, _ repository.AuthContext, _ int64) error {
 			return pgx.ErrNoRows
 		},

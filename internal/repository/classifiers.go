@@ -12,6 +12,7 @@ import (
 type ClassifierRepository interface {
 	GetClassifiersFiltered(ctx context.Context, auth AuthContext, filter json.RawMessage) (json.RawMessage, error)
 	GetSourceBooks(ctx context.Context, auth AuthContext) (json.RawMessage, error)
+	GetSourceBookDependencyIDs(ctx context.Context, auth AuthContext, sourceBookID int64) ([]int64, error)
 	RequireSourceBookAccessible(ctx context.Context, auth AuthContext, sourceBookID int64) error
 	ValidateHeroAccess(ctx context.Context, auth AuthContext, heroID int64) error
 }
@@ -22,6 +23,18 @@ func (r *repository) GetClassifiersFiltered(ctx context.Context, auth AuthContex
 
 func (r *repository) GetSourceBooks(ctx context.Context, auth AuthContext) (json.RawMessage, error) {
 	return r.callFunc(ctx, auth, `SELECT classifiers.get_source_books('{"includeGlobal": true}'::jsonb)`)
+}
+
+func (r *repository) GetSourceBookDependencyIDs(ctx context.Context, auth AuthContext, sourceBookID int64) ([]int64, error) {
+	raw, err := r.callFunc(ctx, auth, "SELECT classifiers.get_source_book_dependency_ids($1)", sourceBookID)
+	if err != nil {
+		return nil, err
+	}
+	var ids []int64
+	if err := json.Unmarshal(raw, &ids); err != nil {
+		return nil, err
+	}
+	return ids, nil
 }
 
 func (r *repository) RequireSourceBookAccessible(ctx context.Context, auth AuthContext, sourceBookID int64) error {
