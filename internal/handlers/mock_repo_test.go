@@ -14,6 +14,7 @@ type mockRepo struct {
 	// Classifiers
 	getClassifiersFilteredFunc      func(ctx context.Context, auth repository.AuthContext, filter json.RawMessage) (json.RawMessage, error)
 	getSourceBooksFunc              func(ctx context.Context, auth repository.AuthContext) (json.RawMessage, error)
+	getSourceBookDependencyIDsFunc  func(ctx context.Context, auth repository.AuthContext, sourceBookID int64) ([]int64, error)
 	validateHeroAccessFunc          func(ctx context.Context, auth repository.AuthContext, heroID int64) error
 	requireSourceBookAccessibleFunc func(ctx context.Context, auth repository.AuthContext, sourceBookID int64) error
 
@@ -876,4 +877,11 @@ func (m *mockRepo) RequireSourceBookAccessible(ctx context.Context, auth reposit
 		return m.requireSourceBookAccessibleFunc(ctx, auth, sourceBookID)
 	}
 	return errNotImplemented
+}
+
+func (m *mockRepo) GetSourceBookDependencyIDs(ctx context.Context, auth repository.AuthContext, sourceBookID int64) ([]int64, error) {
+	if m.getSourceBookDependencyIDsFunc != nil {
+		return m.getSourceBookDependencyIDsFunc(ctx, auth, sourceBookID)
+	}
+	return nil, errNotImplemented
 }

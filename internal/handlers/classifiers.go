@@ -44,25 +44,28 @@ func (h *Handler) GetAllClassifiers(c *gin.Context) {
 		return
 	}
 
-	sourceBooks := make([]json.RawMessage, 0)
+	var sbIDs []int64
 	if query.CampaignID != nil {
-		sbIDs, err := h.repo.GetCampaignSourceBookIDs(c.Request.Context(), auth, *query.CampaignID)
+		ids, err := h.repo.GetCampaignSourceBookIDs(c.Request.Context(), auth, *query.CampaignID)
 		if err != nil {
 			HandlePgxError(c, err)
 			return
 		}
-		for _, sbID := range sbIDs {
-			sbData, err := h.fetchSourceBookClassifiers(c, auth, sbID)
-			if err != nil {
-				HandlePgxError(c, err)
-				return
-			}
-			sourceBooks = append(sourceBooks, sbData)
-		}
+		sbIDs = ids
 	}
 
 	if query.SourceBookID != nil {
-		sbData, err := h.fetchSourceBookClassifiers(c, auth, *query.SourceBookID)
+		depIDs, err := h.repo.GetSourceBookDependencyIDs(c.Request.Context(), auth, *query.SourceBookID)
+		if err != nil {
+			HandlePgxError(c, err)
+			return
+		}
+		sbIDs = append([]int64{*query.SourceBookID}, depIDs...)
+	}
+
+	sourceBooks := make([]json.RawMessage, 0, len(sbIDs))
+	for _, sbID := range sbIDs {
+		sbData, err := h.fetchSourceBookClassifiers(c, auth, sbID)
 		if err != nil {
 			HandlePgxError(c, err)
 			return
