@@ -270,6 +270,7 @@ func TestGetSourceBooks_RepoError(t *testing.T) {
 func TestGetAllClassifiers_WithCampaignID(t *testing.T) {
 	globalData := json.RawMessage(`{"skills":[],"attrs":[1]}`)
 	sbData := json.RawMessage(`{"skills":[1],"attrs":[]}`)
+	var accessChecked []int64
 	mock := &mockRepo{
 		getCampaignSourceBookIDsFunc: func(_ context.Context, _ repository.AuthContext, id int64) ([]int64, error) {
 			if id != 5 {
@@ -277,7 +278,8 @@ func TestGetAllClassifiers_WithCampaignID(t *testing.T) {
 			}
 			return []int64{10}, nil
 		},
-		requireSourceBookAccessibleFunc: func(_ context.Context, _ repository.AuthContext, _ int64) error {
+		requireSourceBookAccessibleFunc: func(_ context.Context, _ repository.AuthContext, id int64) error {
+			accessChecked = append(accessChecked, id)
 			return nil
 		},
 		getClassifiersFilteredFunc: func(_ context.Context, _ repository.AuthContext, filter json.RawMessage) (json.RawMessage, error) {
@@ -296,6 +298,10 @@ func TestGetAllClassifiers_WithCampaignID(t *testing.T) {
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d", w.Code)
+	}
+
+	if len(accessChecked) != 1 || accessChecked[0] != 10 {
+		t.Fatalf("access checks = %v, want [10]", accessChecked)
 	}
 
 	var result struct {
@@ -443,6 +449,7 @@ func TestGetAllClassifiers_WithSourceBookID_FansOutOverDependencies(t *testing.T
 		7:  json.RawMessage(`{"book":7}`),
 		9:  json.RawMessage(`{"book":9}`),
 	}
+	var accessChecked []int64
 	mock := &mockRepo{
 		getSourceBookDependencyIDsFunc: func(_ context.Context, _ repository.AuthContext, id int64) ([]int64, error) {
 			if id != 42 {
@@ -450,7 +457,8 @@ func TestGetAllClassifiers_WithSourceBookID_FansOutOverDependencies(t *testing.T
 			}
 			return []int64{7, 9}, nil
 		},
-		requireSourceBookAccessibleFunc: func(_ context.Context, _ repository.AuthContext, _ int64) error {
+		requireSourceBookAccessibleFunc: func(_ context.Context, _ repository.AuthContext, id int64) error {
+			accessChecked = append(accessChecked, id)
 			return nil
 		},
 		getClassifiersFilteredFunc: func(_ context.Context, _ repository.AuthContext, filter json.RawMessage) (json.RawMessage, error) {
@@ -474,6 +482,16 @@ func TestGetAllClassifiers_WithSourceBookID_FansOutOverDependencies(t *testing.T
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	wantAccess := []int64{42, 7, 9}
+	if len(accessChecked) != len(wantAccess) {
+		t.Fatalf("access checks = %v, want %v", accessChecked, wantAccess)
+	}
+	for i, id := range wantAccess {
+		if accessChecked[i] != id {
+			t.Errorf("access checks[%d] = %d, want %d", i, accessChecked[i], id)
+		}
 	}
 
 	var result struct {
