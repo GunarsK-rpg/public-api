@@ -26,7 +26,7 @@ func (r *repository) GetSourceBooks(ctx context.Context, auth AuthContext) (json
 }
 
 func (r *repository) GetSourceBookDependencyIDs(ctx context.Context, auth AuthContext, sourceBookID int64) ([]int64, error) {
-	raw, err := r.callFunc(ctx, auth, "SELECT classifiers.get_source_book_dependency_ids($1)", sourceBookID)
+	raw, err := r.callFunc(ctx, auth, "SELECT to_jsonb(classifiers.get_source_book_dependency_ids($1))", sourceBookID)
 	if err != nil {
 		return nil, err
 	}
